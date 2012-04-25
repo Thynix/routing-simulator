@@ -1,4 +1,5 @@
-import static java.lang.Math.*;
+import static java.lang.Math.ceil;
+import static java.lang.Math.sqrt;
 
 /**
  * A class to compute stats about an array.  For speed, it caches a variety of

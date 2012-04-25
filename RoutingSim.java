@@ -1,7 +1,5 @@
 import java.text.DecimalFormat;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 /**
@@ -26,6 +24,7 @@ public class RoutingSim {
 		int nRequests = 25000;
 		int nIntersectTests = 2;
 		int[] sinkPolsUsed = {0, 1};
+		//TODO: What are these? What is a pol?
 		int[] routePolsUsed = {3};
 		int nTrials = 1;
 
@@ -94,6 +93,7 @@ public class RoutingSim {
 			}
 		}
 
+		//TODO: What is this used for?
 		double[][][] avgStats = new double[graphParam.length][13][nTrials];
 
 		//Time tracking: report time taken for each graph setting if verbose; upon completion otherwise.
@@ -129,6 +129,7 @@ public class RoutingSim {
 					}
 				}
 
+				//TODO: Graph constructor should just take GramParam instead of all its parts. (As well as MersanneTwister)
 				Graph g = Graph.generate1dKleinbergGraph(gp.n, gp.p, gp.q, rand, gp.pLowUptime, gp.pInstantReject, gp.evenSpacing, gp.fastGeneration);
 				if (printGraphStats && printIndivStats) g.printGraphStats(verbose);
 				if (verbose) {
@@ -141,6 +142,7 @@ public class RoutingSim {
 					avgStats[graphIter][i][trial] = indivStats[i];
 				}
 
+				//TODO: foreach
 				for (int rp = 0; rp < routePolsUsed.length; rp++) {
 					rand = new MersenneTwister(trial);
 					simulate(g, rand, nRequests, nIntersectTests, routePolsUsed[rp], sinkPolsUsed, printPairedMaxHTI);
@@ -162,6 +164,7 @@ public class RoutingSim {
 				GraphParam gp = graphParam[i];
 				System.out.print(gp.p + "\t" + gp.q + "\t" + gp.pLowUptime + "\t" +
 						gp.pInstantReject + "\t" + gp.evenSpacing + "\t" + gp.fastGeneration + "\t");
+				//TODO: Why is this hardcoded to 13?
 				for (int j = 0; j < 13; j++) {
 					ArrayStats s = new ArrayStats(avgStats[i][j]);
 					System.out.print("(" + outputFormat.format(s.mean()) + " " + outputFormat.format(s.stdDev()) + ")\t");
@@ -176,12 +179,14 @@ public class RoutingSim {
 			int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI) {
 		System.out.println("Routing " + nRequests * nIntersectTests + " requests, policy " + routePolicy + " on network of size " + g.size() + ".");
 		long startTime = System.currentTimeMillis();
+		//TODO: This is only used in 2D capacity in one line: can make 1D?
 		Request[][] requests = new Request[nRequests][nIntersectTests];
 
 		//Separated into two loops so that the same set
 		//of requests are generated for each routing
 		//policy.
 		//This is why the instances of Random must be the same each run: comparability between routing schemes.
+		//TODO: Intersect means what?
 		int[][] requestOrigins = new int[nRequests][nIntersectTests];
 		for (int i = 0; i < nRequests; i++) {
 			double l = rand.nextDouble();
@@ -194,6 +199,7 @@ public class RoutingSim {
 		}
 
 		//Route all requests.
+		//TODO: What does route do?
 		for (int i = 0; i < nRequests; i++) {
 			for (int j = 0; j < nIntersectTests; j++) {
 				Request r = requests[i][j];
@@ -212,12 +218,14 @@ public class RoutingSim {
 		System.out.println("Requests precisely routed: " + nPreciseRouted);
 		//assert nPreciseRouted == nRequests * nIntersectTests;
 
+		//TODO: What is a sink policy? Is "pol" policy?
 		//For each sink policy, compute and print stats.
 		//Sink policy has no effect on routing decisions,
 		//so we compute all sink policies during one
 		//routing trial.
 		for (int sp = 0; sp < sinkPolsUsed.length; sp++) {
 			int sinkPolicy = sinkPolsUsed[sp];
+			//TODO: "Hist" is history? Histogram?
 			int sinkHistSize = 13;
 			int[] sinkHist = new int[sinkHistSize];
 			int[] lowUptimeSinkHist = new int[sinkHistSize];
@@ -258,6 +266,7 @@ public class RoutingSim {
 			meanLowUptimeSinkCount /= nRequests * nIntersectTests;
 			meanHighUptimeSinkCount /= nRequests * nIntersectTests;
 
+			//TODO: Would these be more readable as actual histogram plots?
 			System.out.println("Sink count histograms for policy " + sinkPolicy + ":");
 			System.out.println("n\tTotal\tlowU\thighU");
 			for (int i = 0; i < sinkHistSize; i++) {
@@ -269,6 +278,7 @@ public class RoutingSim {
 			System.out.println();
 		}
 
+		//TODO: What does decrement mean? TODO: This is 2D (requests) to 1D (decrements)... 1D requests would be cleaner here.
 		//Populate decrements array with htlDecrements() from each request.
 		int[] decrements = new int[nRequests * nIntersectTests];
 		for (int i = 0; i < nRequests; i++) {
@@ -277,14 +287,17 @@ public class RoutingSim {
 				decrements[i*nIntersectTests + j] = d;
 			}
 		}
+		//TODO: Why not have the printArraySummary() sort it?
 		Arrays.sort(decrements);
 		System.out.println("HTL Decrements:");
 		System.out.print(printArraySummary(decrements, true));
 
+		//TODO: What is 19 for? The length is used for comparison with number of hops?
 		double[] logDistance = new double[19];
 		int[] logDistCount = new int[19];
 		boolean byDecrements = false;
 
+		//TODO: What is this doing? Filling out a histogram?
 		for (int i = 0; i < nRequests; i++) {
 			for (int j = 0; j < nIntersectTests; j++) {
 				Request r = requests[i][j];
@@ -318,6 +331,7 @@ public class RoutingSim {
 		}
 		System.out.println();
 
+		//
 		int[] maxHopsToIntersect = null;
 		int[] pairedMaxHTI = null;
 		int[][] hopsToSink = null;
@@ -329,11 +343,14 @@ public class RoutingSim {
 				maxHopsToIntersect[i] = -1;
 				pairedMaxHTI[i] = -1;
 				//for (int j = 0; j < nIntersectTests; j++) {
+				//TODO: What?! This only runs once!
 				for (int j = 0; j < 1; j++) {
 					for (int k = 0; k < nIntersectTests; k++) {
+						//TODO: So... k starts at 1 then. No self-routing?
 						if (j == k) continue;
 						int hti = requests[i][j].hopsToIntersect(requests[i][k]);
 						maxHopsToIntersect[i] = Math.max(maxHopsToIntersect[i], hti);
+						//TODO: Is zero selected to just have a sampling? What is the meaning of being at zero?
 						if (j == 0 || k == 0) pairedMaxHTI[i] = Math.max(pairedMaxHTI[i], hti);
 						if (j == 0) {
 							for (int s = 0; s < sinkPolsUsed.length; s++) {
