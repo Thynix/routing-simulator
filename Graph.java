@@ -48,14 +48,6 @@ public class Graph {
 		final double pInstantReject = param.pInstantReject;
 		final boolean evenSpacing = param.evenSpacing;
 		final boolean fastGeneration = param.fastGeneration;
-		if (n <= 2*p + 2*q + 1)
-			throw new IllegalArgumentException("Not enough nodes.");
-		if (q < 0 || p < 0)
-			throw new IllegalArgumentException("Must have non-negative outgoing edges.");
-		if (pLowUptime < 0.0 || pLowUptime > 1.0)
-			throw new IllegalArgumentException("Probabilities are in [0,1].");
-		if (pInstantReject < 0.0 || pInstantReject > 1.0)
-			throw new IllegalArgumentException("Probabilities are in [0,1].");
 
 		Graph g = new Graph(n);
 
