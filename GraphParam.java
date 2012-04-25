@@ -2,13 +2,13 @@
  * Class to specify graph parameters for Kleinberg etc graphs.
  */
 public class GraphParam {
-	int n;
-	int p;
-	int q;
-	double pLowUptime;
-	double pInstantReject;
-	boolean evenSpacing;
-	boolean fastGeneration;
+	public final int n;
+	public final int p;
+	public final int q;
+	public final double pLowUptime;
+	public final double pInstantReject;
+	public final boolean evenSpacing;
+	public final boolean fastGeneration;
 
 	GraphParam(int n, int p, int q, double pLowUptime, double pInstantReject, boolean evenSpacing, boolean fastGeneration) {
 		this.n = n;

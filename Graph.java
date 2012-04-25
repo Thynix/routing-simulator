@@ -35,14 +35,19 @@ public class Graph {
 	 * degree 2 * p + q.  There is no maximum node degree.
 	 * TODO: Adjacent link support not yet tested.
 	 *
-	 * @param n Number of nodes
-	 * @param p Connect to all nodes within lattice distance p.
-	 * @param q Number of outgoing far links
+	 * @param param Contains graph parameters such as size and number of various-distance connections.
+	 * @param rand Random number source used for initialization: locations and probabilities.
 	 * @return A Graph with the desired structure
 	 */
-	public static Graph generate1dKleinbergGraph(int n, int p, int q,
-			Random rand, double pLowUptime, double pInstantReject,
-			boolean evenSpacing, boolean fastGeneration) {
+	public static Graph generate1dKleinbergGraph(GraphParam param, Random rand) {
+		//TODO: Arguments list is cleaner, but this is a mess.
+		final int n = param.n;
+		final int q = param.q;
+		final int p = param.p;
+		final double pLowUptime = param.pLowUptime;
+		final double pInstantReject = param.pInstantReject;
+		final boolean evenSpacing = param.evenSpacing;
+		final boolean fastGeneration = param.fastGeneration;
 		if (n <= 2*p + 2*q + 1)
 			throw new IllegalArgumentException("Not enough nodes.");
 		if (q < 0 || p < 0)
@@ -471,7 +476,7 @@ public class Graph {
 		for (int trial = 0; trial < nTrials; trial++) {
 			System.out.println("Creating test graph...");
 			Random rand = new MersenneTwister(trial);
-			Graph g = generate1dKleinbergGraph(nNodes, p, q, rand, 0.0, 0.0, true, false);
+			Graph g = generate1dKleinbergGraph(new GraphParam(nNodes, p, q, 0.0, 0.0, true, false), rand);
 			g.printGraphStats(true);
 			int[] uniformWalkDist;
 			int[] weightedWalkDist;

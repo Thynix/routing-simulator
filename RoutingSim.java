@@ -132,7 +132,7 @@ public class RoutingSim {
 				}
 
 				//TODO: Graph constructor should just take GramParam instead of all its parts. (As well as MersanneTwister)
-				Graph g = Graph.generate1dKleinbergGraph(gp.n, gp.p, gp.q, rand, gp.pLowUptime, gp.pInstantReject, gp.evenSpacing, gp.fastGeneration);
+				Graph g = Graph.generate1dKleinbergGraph(gp, rand);
 				if (printGraphStats && printIndivStats) g.printGraphStats(verbose);
 				if (verbose) {
 					System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
