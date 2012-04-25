@@ -53,9 +53,23 @@ public class RoutingSim {
 		graph_genMode = {{true, true}, {true, false}, {false, false}};	//{evenSpacing, fastGeneration}
 		*/
 
+		/* Initialize each combination of graphParams.
+		 * n: Network size.
+		 * p: Local connections per node.
+		 * q: Remote connections per node.
+		 * TODO: What are these: ?
+		 * pLow: Low uptime.
+		 * pInstant: Instant reject.
+		 * evenSpacing: TODO: Location spacing?
+		 * fastGeneration:
+		 */
+		//Network size.
 		graph_n = new int[] {10000};
+		//Local connections per node.
 		graph_p = new int[] {0};
+		//Remote connections per node.
 		graph_q = new int[] {6};
+
 		graph_pLow = new double[] {0.1};
 		graph_pInstant = new double[] {0.0};
 		graph_genMode = new boolean[][] {{true, false}};	//{evenSpacing, fastGeneration}
@@ -82,6 +96,7 @@ public class RoutingSim {
 
 		double[][][] avgStats = new double[graphParam.length][13][nTrials];
 
+		//Time tracking: report time taken for each graph setting if verbose; upon completion otherwise.
 		long startTime = System.currentTimeMillis();
 		long lastTime = startTime;
 
@@ -93,6 +108,8 @@ public class RoutingSim {
 			Graph.printGraphStatsHeader();
 			System.out.println();
 		}
+
+		//Run nTrials trials.
 		for (int trial = 0; trial < nTrials; trial++) {
 			System.out.print("Trial " + trial + "... ");
 			if (verbose || printIndivStats) System.out.println();
@@ -164,6 +181,7 @@ public class RoutingSim {
 		//Separated into two loops so that the same set
 		//of requests are generated for each routing
 		//policy.
+		//This is why the instances of Random must be the same each run: comparability between routing schemes.
 		int[][] requestOrigins = new int[nRequests][nIntersectTests];
 		for (int i = 0; i < nRequests; i++) {
 			double l = rand.nextDouble();
@@ -175,6 +193,7 @@ public class RoutingSim {
 			}
 		}
 
+		//Route all requests.
 		for (int i = 0; i < nRequests; i++) {
 			for (int j = 0; j < nIntersectTests; j++) {
 				Request r = requests[i][j];
@@ -183,6 +202,7 @@ public class RoutingSim {
 			}
 		}
 
+		//Count how many requests were routed to their exact destination.
 		int nPreciseRouted = 0;
 		for (int i = 0; i < nRequests; i++) {
 			for (int j = 0; j < nIntersectTests; j++) {
@@ -233,6 +253,7 @@ public class RoutingSim {
 				}
 			}
 
+			//Before this means are just totals; divide by number of iterations above.
 			meanSinkCount /= nRequests * nIntersectTests;
 			meanLowUptimeSinkCount /= nRequests * nIntersectTests;
 			meanHighUptimeSinkCount /= nRequests * nIntersectTests;
@@ -248,6 +269,7 @@ public class RoutingSim {
 			System.out.println();
 		}
 
+		//Populate decrements array with htlDecrements() from each request.
 		int[] decrements = new int[nRequests * nIntersectTests];
 		for (int i = 0; i < nRequests; i++) {
 			for (int j = 0; j < nIntersectTests; j++) {
