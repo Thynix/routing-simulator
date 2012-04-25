@@ -56,11 +56,13 @@ public class RoutingSim {
 		 * n: Network size.
 		 * p: Local connections per node.
 		 * q: Remote connections per node.
-		 * TODO: What are these: ?
-		 * pLow: Low uptime.
-		 * pInstant: Instant reject.
-		 * evenSpacing: TODO: Location spacing?
-		 * fastGeneration:
+		 * pLow: Probability of low uptime. High/low uptime is used when tabulating sinks to categorize as high
+		 *       or low uptime.
+		 * pInstant: Probability that a request to route is instantly rejected.
+		 * evenSpacing: True: locations are distributed uniformly throughout the network.
+		 *              False: locations are uniformly random.
+		 * fastGeneration: True: assumes even distribution for simpler connection generation.
+		 *                 False: precise connection generation but involves more computation and may be slower.
 		 */
 		//Network size.
 		graph_n = new int[] {10000};
