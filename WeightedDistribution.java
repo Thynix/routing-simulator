@@ -4,8 +4,6 @@ import java.util.Random;
 
 /**
  * Selects from a weighted distribution.
- * TODO: This is structured in a way which involves duplicate calculation because the events are constructed as the file
- * is read. This means dividing by the total size each time.
  */
 public class WeightedDistribution {
 
