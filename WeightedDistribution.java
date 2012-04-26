@@ -42,10 +42,12 @@ public class WeightedDistribution {
 
 			for (Event event : events) tentativeTotal += event.occurrences;
 		} catch (FileNotFoundException e) {
+			System.out.println(e);
 			System.out.println("Unable to open file \"" + filename + "\".");
 			//TODO: Is there better behavior?
 			System.exit(1);
 		} catch (IOException e) {
+			System.out.println(e);
 			//TODO: Should these be thrown upwards or what?
 			System.exit(2);
 		}
