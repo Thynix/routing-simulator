@@ -24,6 +24,97 @@ public class Graph {
 		locations = null;
 	}
 
+	private void generateNodes(GraphParam param, Random rand) {
+		locations = new double[param.n];
+		if (param.evenSpacing) {
+			for (int i = 0; i < param.n; i++) locations[i] = (1.0 * i) / param.n;
+		} else {
+			for (int i = 0; i < param.n; i++) locations[i] = rand.nextDouble();
+		}
+
+		Arrays.sort(locations);
+		for (int i = 0; i < param.n; i++) {
+			SimpleNode node = new SimpleNode(locations[i], rand.nextDouble() < param.pLowUptime, param.pInstantReject, rand);
+			node.index = i;
+			nodes.add(node);
+		}
+
+	}
+
+	//TODO: Using GraphParam as an argument is beginning to smell: this takes additional arguments and ignores the number of close connections.
+	/**
+	 * Generates a graph with only long connections and a peer count distribution as described in the given file.
+	 * @param param
+	 * @param rand
+	 * @param filename Desired occurrences in format of "[number of peers] [occurrences]" on each line.
+	 * @return
+	 */
+	public static Graph generatePeerDistGraph(GraphParam param, Random rand, String filename) {
+		Graph g = new Graph(param.n);
+		g.generateNodes(param, rand);
+		WeightedDistribution distribution = new WeightedDistribution(filename, rand);
+		//TODO: Some way to get desired peer distributions cleanly? This is copy-paste from below because it needs to drop out mid-loop.
+
+		//make far links
+		double[] sumProb = new double[param.n];
+		for (int i = 0; i < param.n; i++) {
+			SimpleNode src = g.nodes.get(i);
+			SimpleNode dest;
+			int targetPeers = distribution.randomValue();
+			if (param.fastGeneration) {
+				//Continuous approximation to 1/d distribution; accurate in the large n case.
+				//Treats spacing as even, whether or not that is accurate.
+				//Assumes nodes are sorted in location order.
+				double maxSteps = param.n / 2.0;
+				for (int j = 0; j < param.q; j++) {
+					int steps = (int)Math.round(Math.pow(maxSteps, rand.nextDouble()));
+					assert steps >= 0 && steps <= param.n / 2;
+					int idx = rand.nextBoolean() ? i + steps : i - steps;
+					if (idx < 0) idx += param.n;
+					if (idx >= param.n) idx -= param.n;
+					dest = g.nodes.get(idx);
+					if (idx == i || src.isConnected(dest)) {
+						j--;
+						continue;
+					}
+					if (src.degree() == targetPeers) break;
+					src.connect(dest);
+				}
+			} else {
+				//Slow generation operates on exact node locations (even or otherwise).
+				//Does not require sorted node order.
+				//Precisely accurate even with uneven locations and small graph size.
+
+				//Find normalizing constant for this node
+				double norm = 0.0;
+				for (int j = 0; j < param.n; j++) {
+					if (i != j) {
+						norm += 1.0 / Location.distance(src.getLocation(), g.nodes.get(j).getLocation());
+					}
+					sumProb[j] = norm;
+					//TODO: That norm increased? Wouldn't it only decrease if distance is negative?
+					if (j > 0) assert sumProb[j] >= sumProb[j-1];
+				}
+
+				//Make q distant connections
+				for (int j = 0; j < param.q; j++) {
+					double x = rand.nextDouble() * norm;
+					int idx = Arrays.binarySearch(sumProb, x);
+					if (idx < 0) idx = -1 - idx;
+					dest = g.nodes.get(idx);
+					if (src == dest || src.isConnected(dest)) {
+						j--;
+						continue;
+					}
+					if (src.degree() == targetPeers) break;
+					src.connect(dest);
+				}
+			}
+		}
+
+		return g;
+	}
+
 	/**
 	 * Generate a one-dimensional Kleinberg Graph with given parameters.
 	 * See The Small-World Phenomenon: An Algorithmic Perspective
@@ -52,19 +143,7 @@ public class Graph {
 		Graph g = new Graph(n);
 
 		//make nodes
-		g.locations = new double[n];
-		if (evenSpacing) {
-			for (int i = 0; i < n; i++) g.locations[i] = (1.0 * i) / n;
-		} else {
-			for (int i = 0; i < n; i++) g.locations[i] = rand.nextDouble();
-		}
-
-		Arrays.sort(g.locations);
-		for (int i = 0; i < n; i++) {
-			SimpleNode node = new SimpleNode(g.locations[i], rand.nextDouble() < pLowUptime, pInstantReject, rand);
-			node.index = i;
-			g.nodes.add(node);
-		}
+		g.generateNodes(param, rand);
 
 		//make adjacent links
 		for (int i = 0; i < n; i++) {

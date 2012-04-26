@@ -73,7 +73,7 @@ public class RoutingSim {
 
 		graph_pLow = new double[] {0.1};
 		graph_pInstant = new double[] {0.0};
-		graph_genMode = new boolean[][] {{true, false}};	//{evenSpacing, fastGeneration}
+		graph_genMode = new boolean[][] {{false, false}};	//{evenSpacing, fastGeneration}
 
 		GraphParam[] graphParam;
 		graphParam = new GraphParam[graph_n.length * graph_p.length *
@@ -132,7 +132,7 @@ public class RoutingSim {
 				}
 
 				//TODO: Graph constructor should just take GramParam instead of all its parts. (As well as MersanneTwister)
-				Graph g = Graph.generate1dKleinbergGraph(gp, rand);
+				Graph g = Graph.generatePeerDistGraph(gp, rand, "../../stats/peerDist.dat");
 				if (printGraphStats && printIndivStats) g.printGraphStats(verbose);
 				if (verbose) {
 					System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
