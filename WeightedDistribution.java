@@ -65,4 +65,16 @@ public class WeightedDistribution {
 		//i could have been incremented past end of array if the loop executed.
 		return events.get(i == 0 ? 0 : i - 1).value;
 	}
+
+	public static void main(String[] args) {
+		WeightedDistribution distribution = new WeightedDistribution("../../stats/peerDist_1407.dat", new java.util.Random());
+		//TODO: Actual maximum
+		int[] hist = new int[51];
+		for (int i = 0; i < 40000; i++) {
+			hist[distribution.randomValue()]++;
+		}
+		for (int i = 0; i < hist.length; i++) {
+			System.out.println( i + " " + hist[i]);
+		}
+	}
 }
