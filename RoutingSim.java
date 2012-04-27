@@ -198,7 +198,7 @@ public class RoutingSim {
 		//Find baseline for visibility by selecting nodes from the entire network at random.
 		//i is equivalent 
 		for (int i = 0; i < fractionalNetworkSize; i++) {
-			locations = new HashSet<Double>();
+			locations = new HashSet<Double>(g.size());
 			for (int walk = 0; walk < g.size(); walk++) {
 				locations.add(g.getNode(rand.nextInt(g.size())).getLocation());
 			}
@@ -215,7 +215,7 @@ public class RoutingSim {
 			//Track percentage reached for this number of hops from each node.
 			percentages = new double[fractionalNetworkSize];
 			for (int nodeIndex = 0; nodeIndex < fractionalNetworkSize; nodeIndex++) {
-				locations = new HashSet<Double>();
+				locations = new HashSet<Double>(g.size());
 				SimpleNode source = g.getNode(rand.nextInt(g.size()));
 				for (int walk = 0; walk < g.size(); walk++) {
 					//Not using uniform routing: MH correction.
