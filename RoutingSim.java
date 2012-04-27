@@ -71,6 +71,7 @@ public class RoutingSim {
 		//Remote connections per node.
 		graph_q = new int[] {6};
 
+		int maxHops = 50;
 		graph_pLow = new double[] {0.1};
 		graph_pInstant = new double[] {0.0};
 		graph_genMode = new boolean[][] {{false, false}};	//{evenSpacing, fastGeneration}
@@ -132,7 +133,7 @@ public class RoutingSim {
 				}
 
 				//TODO: Graph constructor should just take GramParam instead of all its parts. (As well as MersanneTwister)
-				Graph g = Graph.generatePeerDistGraph(gp, rand, "../../stats/peerDist.dat");
+				Graph g = Graph.generatePeerDistGraph(gp, rand, "../../stats/peerDist_1407.dat");
 				if (printGraphStats && printIndivStats) g.printGraphStats(verbose);
 				if (verbose) {
 					System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
@@ -147,7 +148,7 @@ public class RoutingSim {
 				//TODO: foreach
 				for (int rp = 0; rp < routePolsUsed.length; rp++) {
 					rand = new MersenneTwister(trial);
-					simulate(g, rand, nRequests, nIntersectTests, routePolsUsed[rp], sinkPolsUsed, printPairedMaxHTI);
+					simulate(g, rand, nRequests, nIntersectTests, routePolsUsed[rp], sinkPolsUsed, printPairedMaxHTI, maxHops);
 				}
 				if (verbose || printIndivStats) System.out.println();
 			}
@@ -178,9 +179,50 @@ public class RoutingSim {
 	}
 
 	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
-			int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI) {
+			int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, int maxHops) {
 		System.out.println("Routing " + nRequests * nIntersectTests + " requests, policy " + routePolicy + " on network of size " + g.size() + ".");
 		long startTime = System.currentTimeMillis();
+
+		final double networkFraction = 0.1;
+		final int fractionalNetworkSize = (int)(g.size()*networkFraction);
+		double[] percentages = new double[fractionalNetworkSize];
+		HashSet<Double> locations;
+		//Find baseline for visibility by selecting nodes from the entire network at random.
+		//i is equivalent 
+		for (int i = 0; i < fractionalNetworkSize; i++) {
+			locations = new HashSet<Double>();
+			for (int walk = 0; walk < g.size(); walk++) {
+				locations.add(g.getNode(rand.nextInt(g.size())).getLocation());
+			}
+			percentages[i] = (double)locations.size() / g.size() * 100.0;
+		}
+		Arrays.sort(percentages);
+		System.out.println("Selecting from network at random as reference:");
+		System.out.println(printArraySummary(percentages, true));
+
+		//Find percentage of nodes reached with random walk for increasing hops from all nodes.
+		//TODO: What is a good number of walks to try?
+		//TODO: Can summarize distribution of --- what? Percentage reached? Hops?
+		for (int hops = 1; hops <= maxHops; hops++) {
+			//Track percentage reached for this number of hops from each node.
+			percentages = new double[fractionalNetworkSize];
+			/* TODO: Starting point nodes should be evenly distributed. When locations are randomly assigned
+			 * this should not be an issue, but if they're assigned sequentially as with evenSpacing, it will
+			 * bias the starting points toward lower locations.
+			 */
+			for (int nodeIndex = 0; nodeIndex < fractionalNetworkSize; nodeIndex++) {
+				locations = new HashSet<Double>();
+				for (int walk = 0; walk < g.size(); walk++) {
+					//Not using uniform routing: MH correction.
+					locations.add(g.getNode(nodeIndex).randomWalk(hops, false, rand).getLocation());
+				}
+				percentages[nodeIndex] = (double)locations.size() / g.size() * 100.0;
+			}
+			Arrays.sort(percentages);
+			System.out.println(hops + " hops:");
+			System.out.println(printArraySummary(percentages, true));
+		}
+
 		//TODO: This is only used in 2D capacity in one line: can make 1D?
 		Request[][] requests = new Request[nRequests][nIntersectTests];
 
@@ -450,6 +492,69 @@ public class RoutingSim {
 	}
 
 	public static boolean isSorted(int[] a) {
+		for (int i = 0; i < a.length - 1; i++) if (a[i] > a[i+1]) return false;
+		return true;
+	}
+	/* TODO: Is there an alternative to copy-pasting to get array summary for both doubles and ints?
+	 * Using Generics with <? extends Number> doesn't seem helpful as it wouldn't support operators and there are no
+	 * common methods in Number.
+	 */
+
+	/**
+	 * Utility method to summarize a distribution.  Assumes array is
+	 * sorted, as per Arrays.sort.
+	 *
+	 * @param a The array to summarize
+	 * @param verbose Whether to print the long or short version
+	 * @return A String summarizing the array
+	 */
+	public static String printArraySummary(double[] a, boolean verbose) {
+		if (!isSorted(a)) throw new IllegalArgumentException("Array must be sorted.");
+		double m = mean(a);
+		double stdDev = stdDev(a);
+		double pct50 = a[((int)(a.length * 0.5))];
+		double pct80 = a[((int)(a.length * 0.8))];
+		double pct90 = a[((int)(a.length * 0.9))];
+		double pct97 = a[((int)(a.length * 0.97))];
+		double pct99 = a[((int)(a.length * 0.99))];
+		String s;
+		if (verbose) {
+			s =		"Mean:			" + m + "\n";
+			s = s +		"Std Dev:		" + stdDev + "\n";
+			s = s +		"50th percentile:	" + pct50 + "\n";
+			s = s +		"90th percentile:	" + pct90 + "\n";
+			s = s +		"97th percentile:	" + pct97 + "\n";
+			s = s +		"99th percentile:	" + pct99 + "\n";
+		} else {
+			s = m + "\t" + stdDev + "\t" + pct50 + "\t" + pct90 + "\t" + pct97 + "\t" + pct99 + "\t";
+		}
+		return s;
+	}
+
+	public static double mean(double[] a) {
+		double m = 0.0;
+		for (int i = 0; i < a.length; i++) m += a[i];
+		m /= a.length;
+		return m;
+	}
+
+	public static double sumSquares(double[] a) {
+		double ss = 0.0;
+		for (int i = 0; i < a.length; i++) ss += ((double)a[i])*((double)a[i]);
+		return ss;
+	}
+
+	public static double variance(double[] a) {
+		double ss = sumSquares(a);
+		double m = mean(a);
+		return (ss / a.length) - m * m;
+	}
+
+	public static double stdDev(double[] a) {
+		return Math.sqrt(variance(a));
+	}
+
+	public static boolean isSorted(double[] a) {
 		for (int i = 0; i < a.length - 1; i++) if (a[i] > a[i+1]) return false;
 		return true;
 	}
