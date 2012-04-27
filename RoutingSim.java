@@ -183,8 +183,16 @@ public class RoutingSim {
 		System.out.println("Routing " + nRequests * nIntersectTests + " requests, policy " + routePolicy + " on network of size " + g.size() + ".");
 		long startTime = System.currentTimeMillis();
 
-		final double networkFraction = 0.1;
-		final int fractionalNetworkSize = (int)(g.size()*networkFraction);
+		//Where 0.99 is desired accurate percentile.
+		/* 13:05:40    evanbd | As a general rule, for well-behaved (meaning: basically normal) data, your percentiles will be valid up until you have
+		                      | around 30 points not included. So if you want a valid 99th percentile, you need to take 3000 data points.
+		   13:05:46    evanbd | Plus or minus a bunch.
+		   13:06:24    evanbd | This is a heuristic, not a rule; if you want a rule, you need to go put a confidence interval on your percentile, and that
+		                      | gets all complicated.
+		   13:07:02    evanbd | Note that the above number doesn't change much with network size.
+		   13:07:13    evanbd | 30*(1/1-0.99)
+		 */
+		final int fractionalNetworkSize =(int)(30*(1/(1-0.99)));
 		double[] percentages = new double[fractionalNetworkSize];
 		HashSet<Double> locations;
 		//Find baseline for visibility by selecting nodes from the entire network at random.
