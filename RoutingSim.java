@@ -214,15 +214,12 @@ public class RoutingSim {
 		for (int hops = 1; hops <= maxHops; hops++) {
 			//Track percentage reached for this number of hops from each node.
 			percentages = new double[fractionalNetworkSize];
-			/* TODO: Starting point nodes should be evenly distributed. When locations are randomly assigned
-			 * this should not be an issue, but if they're assigned sequentially as with evenSpacing, it will
-			 * bias the starting points toward lower locations.
-			 */
 			for (int nodeIndex = 0; nodeIndex < fractionalNetworkSize; nodeIndex++) {
 				locations = new HashSet<Double>();
+				SimpleNode source = g.getNode(rand.nextInt(g.size()));
 				for (int walk = 0; walk < g.size(); walk++) {
 					//Not using uniform routing: MH correction.
-					locations.add(g.getNode(nodeIndex).randomWalk(hops, false, rand).getLocation());
+					locations.add(source.randomWalk(hops, false, rand).getLocation());
 				}
 				percentages[nodeIndex] = (double)locations.size() / g.size() * 100.0;
 			}
