@@ -455,16 +455,19 @@ distloop:
 	}
 
 	/**
-	 * Get the final node of a random walk starting here.
+	 * Get a trace of a random walk starting here.
 	 *
 	 * @param hops Number of hops to walk
 	 * @param uniform Whether to perform a uniform (normal) walk, or attempt to correct for high-degree bias
 	 * @param rand Randomness source to use
-	 * @return The final node of the walk
+	 * @return list of nodes along the way. The list's first element is the this node, its last is the endpoint.
 	 */
-	public SimpleNode randomWalk(int hops, boolean uniform, Random rand) {
+	public ArrayList<SimpleNode> randomWalkList(int hops, boolean uniform, Random rand) {
 		if (hops < 0) throw new IllegalArgumentException("Must have positive hops.");
-		if (hops == 0) return this;
+		ArrayList<SimpleNode> list = new ArrayList<SimpleNode>();
+		//System.out.println(hops + " HTL: At " + this.index);
+		list.add(this);
+		if (hops == 0) return list;
 
 		SimpleNode next;
 		if (uniform) {
@@ -482,18 +485,35 @@ distloop:
 					//not accepted; decrement hops and try again
 					next = this;
 					hops--;
+					/* Walk stayed on this node; had it ended here it would be the endpoint.
+					 * Don't add extra if this is the last in the chain case though; will be added
+					 * in the call for zero hops.
+					 */
+					if (hops > 0) list.add(this);
 				}
 			}
+			//HTL ran out while looking for somewhere to route to: current node is endpoint.
+			//It was already added above.
 			if (hops == 0) {
 				assert next == this;
-				return this;
+				//Hops is currently zero - can't be negative so make it zero for the recursive call.
+				hops = 1;
 			}
 		}
-		if (hops == 1) {
-			return next;
-		} else {
-			return next.randomWalk(hops - 1, uniform, rand);
-		}
+		list.addAll(next.randomWalkList(hops - 1, uniform, rand));
+		return list;
+	}
+
+	/**
+	 * Get the final node of a random walk starting here.
+	 *
+	 * @param hops Number of hops to walk
+	 * @param uniform Whether to perform a uniform (normal) walk, or attempt to correct for high-degree bias
+	 * @param rand Randomness source to use
+	 * @return The final node of the walk
+	 */
+	public SimpleNode randomWalk(int hops, boolean uniform, Random rand) {
+		return randomWalkList(hops, uniform, rand).get(hops);
 	}
 
 	/**

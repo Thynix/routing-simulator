@@ -6,12 +6,25 @@ import java.util.Random;
 public class WeightedDegreeNode extends SimpleNode {
 	public final int desiredDegree;
 
+	/**
+	 * Generates a node with a desired degree which is guaranteed to be at least 1.
+	 * @param location
+	 * @param lowUptime
+	 * @param pInstantReject
+	 * @param rand
+	 * @param distribution
+	 */
 	WeightedDegreeNode(double location, boolean lowUptime, double pInstantReject, Random rand, WeightedDistribution distribution) {
 		super(location, lowUptime, pInstantReject, rand);
-		desiredDegree = distribution.randomValue();
+		int candidate = distribution.randomValue();
+		if (candidate == 0) desiredDegree = 1;
+		else desiredDegree = candidate;
 	}
 
+	/**
+	 * @return True if the node is at (or above) its desired degree.
+	 */
 	public boolean atDegree() {
-		return desiredDegree == degree();
+		return desiredDegree <= degree();
 	}
 }

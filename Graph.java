@@ -55,16 +55,18 @@ public class Graph {
 		WeightedDistribution distribution = new WeightedDistribution(filename, new Random(rand.nextLong()));
 		ArrayList<SimpleNode> replacement = new ArrayList<SimpleNode>();
 		for (SimpleNode node : g.nodes) {
-			replacement.add(node.index, new WeightedDegreeNode(node.getLocation(), node.lowUptime(), param.pInstantReject, rand, distribution));
+			g.nodes.set(node.index, new WeightedDegreeNode(node.getLocation(), node.lowUptime(), param.pInstantReject, rand, distribution));
+			g.nodes.get(node.index).index = node.index;
 		}
 		g.nodes = replacement;
 
 
+		//Probability of not making a connection with a peer which has its desired degree.
+		final double rejectProbability = 0.98;
 		//TODO: Some way to get desired peer distributions cleanly? This is copy-paste from below because it needs to drop out mid-loop.
 		//make far links
 		double[] sumProb = new double[param.n];
-		//TODO: How to deal with it getting more difficult to find unconnected nodes as the graph becomes connected?
-		for (int i = 0; i < param.n*0.999; i++) {
+		for (int i = 0; i < param.n; i++) {
 			WeightedDegreeNode src = (WeightedDegreeNode) g.nodes.get(i);
 			if (src.atDegree()) continue;
 			WeightedDegreeNode dest;
@@ -80,7 +82,11 @@ public class Graph {
 					if (idx < 0) idx += param.n;
 					if (idx >= param.n) idx -= param.n;
 					dest = (WeightedDegreeNode)g.nodes.get(idx);
-					if (idx == i || src.isConnected(dest) || dest.atDegree()) continue;
+					/* Reject if already connected, connection to self, if with high probability if
+					 * candidate peer has its desired degree
+					 */
+					if (idx == i || src.isConnected(dest) ||
+					    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;
 					src.connect(dest);
 				}
 			} else {
@@ -105,7 +111,8 @@ public class Graph {
 					int idx = Arrays.binarySearch(sumProb, x);
 					if (idx < 0) idx = -1 - idx;
 					dest = (WeightedDegreeNode)g.nodes.get(idx);
-					if (src == dest || src.isConnected(dest) || dest.atDegree()) continue;
+					if (src == dest || src.isConnected(dest) ||
+					    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;
 					src.connect(dest);
 				}
 			}

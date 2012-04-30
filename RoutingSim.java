@@ -179,12 +179,46 @@ public class RoutingSim {
 		System.out.println("Total time taken (ms): " + (System.currentTimeMillis() - startTime));
 	}
 
+	/**
+	 * @param array to convert
+	 * @return string in which "[index] [value]" pairs are newline-delimited.
+	 */
+	private static String stringArray(int[] array) {
+		String s = "";
+		for (int i = 0; i < array.length; i++) s += i + " " + array[i] + "\n";
+		return s;
+	}
+
+	private static void writeArray(int[] array, File target) {
+		try {
+			FileOutputStream outputStream = new FileOutputStream(target);
+			outputStream.write(stringArray(array).getBytes());
+		} catch (FileNotFoundException e) {
+			System.out.println("Cannot open file \"" + target.getAbsolutePath() + "\" for writing.");
+			System.out.println(e);
+			System.exit(1);
+		} catch (IOException e) {
+			System.out.println(e);
+			System.exit(1);
+		}
+	}
+
 	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
 			int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, int maxHops) {
+
+		final String containingPath = "occurenceDistribution/";
+		File output = new File(containingPath);
+		assert output.isDirectory();
+		if (!output.exists()) {
+			if (!output.mkdirs()) {
+				System.out.println("Unable to create requested output directory \"" + containingPath + "\".");
+				System.exit(1);
+			}
+		}
+
 		System.out.println("Routing " + nRequests * nIntersectTests + " requests, policy " + routePolicy + " on network of size " + g.size() + ".");
 		long startTime = System.currentTimeMillis();
 
-		//Where 0.99 is desired accurate percentile.
 		/* 13:05:40    evanbd | As a general rule, for well-behaved (meaning: basically normal) data, your percentiles will be valid up until you have
 		                      | around 30 points not included. So if you want a valid 99th percentile, you need to take 3000 data points.
 		   13:05:46    evanbd | Plus or minus a bunch.
@@ -193,40 +227,47 @@ public class RoutingSim {
 		   13:07:02    evanbd | Note that the above number doesn't change much with network size.
 		   13:07:13    evanbd | 30*(1/1-0.99)
 		 */
-		final int fractionalNetworkSize =(int)(30*(1/(1-0.99)));
-		double[] percentages = new double[fractionalNetworkSize];
-		HashSet<Double> locations;
+		//TODO: 0.99 is desired percentile - any concerns for validity of occurrence distribution?
+		final int nTrials =(int)(30*(1/(1-0.99)));
+		final int nProbes = g.size();
+		System.out.println("Determining baseline");
+		int[] occurrences = new int[g.size()];
 		//Find baseline for visibility by selecting nodes from the entire network at random.
-		//i is equivalent 
-		for (int i = 0; i < fractionalNetworkSize; i++) {
-			locations = new HashSet<Double>(g.size());
+		for (int i = 0; i < nTrials; i++) {
 			for (int walk = 0; walk < g.size(); walk++) {
-				locations.add(g.getNode(rand.nextInt(g.size())).getLocation());
+				occurrences[g.getNode(rand.nextInt(g.size())).index]++;
 			}
-			percentages[i] = (double)locations.size() / g.size() * 100.0;
 		}
-		Arrays.sort(percentages);
-		System.out.println("Selecting from network at random as reference:");
-		System.out.println(printArraySummary(percentages, true));
 
-		//Find percentage of nodes reached with random walk for increasing hops from all nodes.
-		//TODO: What is a good number of walks to try?
-		//TODO: Can summarize distribution of --- what? Percentage reached? Hops?
-		for (int hops = 1; hops <= maxHops; hops++) {
-			//Track percentage reached for this number of hops from each node.
-			percentages = new double[fractionalNetworkSize];
-			for (int nodeIndex = 0; nodeIndex < fractionalNetworkSize; nodeIndex++) {
-				locations = new HashSet<Double>(g.size());
-				SimpleNode source = g.getNode(rand.nextInt(g.size()));
-				for (int walk = 0; walk < g.size(); walk++) {
-					//Not using uniform routing: MH correction.
-					locations.add(source.randomWalk(hops, false, rand).getLocation());
+		output = new File(containingPath + "reference.dat");
+		writeArray(occurrences, output);
+
+		System.out.println("Simulating HTL");
+		//Find distribution of nodes reached with random walk for increasing hops from all nodes.
+		//maxHops + 1 is because the starting node is at zero hops.
+		int[][] hopOccurrences = new int[maxHops + 1][g.size()];
+		ArrayList<SimpleNode> trace;
+		for (int nodeIndex = 0; nodeIndex < nTrials; nodeIndex++) {
+			SimpleNode source = g.getNode(rand.nextInt(g.size()));
+			SimpleNode alongTrace;
+			for (int walk = 0; walk < nProbes; walk++) {
+				//False: not using uniform routing: MH correction.
+				trace = source.randomWalkList(maxHops, false, rand);
+				//Traces: starting point (zero hops), then maxHops hops from there.
+				assert trace.size() == maxHops + 1;
+				for (int fromEnd = 0; fromEnd <= maxHops; fromEnd++) {
+					//fromEnd of trace: hops along. 0 is starting node.
+					alongTrace = trace.get(fromEnd);
+					hopOccurrences[fromEnd][alongTrace.index]++;
 				}
-				percentages[nodeIndex] = (double)locations.size() / g.size() * 100.0;
 			}
-			Arrays.sort(percentages);
-			System.out.println(hops + " hops:");
-			System.out.println(printArraySummary(percentages, true));
+		}
+
+		System.out.println("Sorting results.");
+		for (int hops = 0; hops <= maxHops; hops++) {
+			output = new File(containingPath + "probe-" + hops + ".dat");
+			Arrays.sort(hopOccurrences[hops]);
+			writeArray(hopOccurrences[hops], output);
 		}
 
 		//TODO: This is only used in 2D capacity in one line: can make 1D?
