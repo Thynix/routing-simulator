@@ -53,13 +53,10 @@ public class Graph {
 		Graph g = new Graph(param.n);
 		g.generateNodes(param, rand);
 		WeightedDistribution distribution = new WeightedDistribution(filename, new Random(rand.nextLong()));
-		ArrayList<SimpleNode> replacement = new ArrayList<SimpleNode>();
 		for (SimpleNode node : g.nodes) {
 			g.nodes.set(node.index, new WeightedDegreeNode(node.getLocation(), node.lowUptime(), param.pInstantReject, rand, distribution));
 			g.nodes.get(node.index).index = node.index;
 		}
-		g.nodes = replacement;
-
 
 		//Probability of not making a connection with a peer which has its desired degree.
 		final double rejectProbability = 0.98;
