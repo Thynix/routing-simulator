@@ -208,9 +208,7 @@ public class RoutingSim {
 		}
 	}
 
-	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
-			int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, int maxHops) {
-
+	public static void probeDistribution(Graph g, Random rand, int maxHops) {
 		final String containingPath = "occurenceDistribution/";
 		File output = new File(containingPath);
 		assert output.isDirectory();
@@ -220,9 +218,6 @@ public class RoutingSim {
 				System.exit(1);
 			}
 		}
-
-		System.out.println("Routing " + nRequests * nIntersectTests + " requests, policy " + routePolicy + " on network of size " + g.size() + ".");
-		long startTime = System.currentTimeMillis();
 
 		/* 13:05:40    evanbd | As a general rule, for well-behaved (meaning: basically normal) data, your percentiles will be valid up until you have
 		                      | around 30 points not included. So if you want a valid 99th percentile, you need to take 3000 data points.
@@ -274,6 +269,10 @@ public class RoutingSim {
 			Arrays.sort(hopOccurrences[hops]);
 			writeArray(hopOccurrences[hops], output);
 		}
+	}
+
+	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
+			int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI) {
 
 		//TODO: This is only used in 2D capacity in one line: can make 1D?
 		Request[][] requests = new Request[nRequests][nIntersectTests];
