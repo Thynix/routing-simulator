@@ -272,6 +272,8 @@ public class RoutingSim {
 
 	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
 			int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI) {
+		System.out.println("Routing " + nRequests * nIntersectTests + " requests, policy " + routePolicy + " on network of size " + g.size() + ".");
+		long startTime = System.currentTimeMillis();
 
 		//TODO: This is only used in 2D capacity in one line: can make 1D?
 		Request[][] requests = new Request[nRequests][nIntersectTests];
