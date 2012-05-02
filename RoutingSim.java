@@ -223,7 +223,7 @@ public class RoutingSim {
 					cmd.hasOption("fast-generation"));
 
 				if (verbose) {
-					System.out.print("Generating 1d Kleinberg graph of " + gp.n + " nodes, with ");
+					System.out.print("Generating " + graphType.name() + " graph of " + gp.n + " nodes, with ");
 					System.out.println("parameters p = " + gp.p + ", q = " + gp.q + ".");
 					System.out.print("pLowUptime = " + gp.pLowUptime + ", pInstantReject = " + gp.pInstantReject);
 					System.out.println(", evenSpacing = " + gp.evenSpacing + ", fastGeneration = " + gp.fastGeneration);
