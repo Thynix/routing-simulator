@@ -283,7 +283,7 @@ public class RoutingSim {
 
 				if (cmd.hasOption("probe")) {
 					rand = new MersenneTwister(seed);
-					probeDistribution(g, rand, maxHops, quiet, verbose);
+					probeDistribution(g, rand, maxHops, quiet, verbose, cmd.getOptionValue("output-probe"));
 				}
 
 				if (cmd.hasOption("route")) {
@@ -337,8 +337,7 @@ public class RoutingSim {
 		}
 	}
 
-	public static void probeDistribution(Graph g, Random rand, int maxHops, boolean quiet, boolean verbose) {
-		final String containingPath = "occurenceDistribution/";
+	public static void probeDistribution(Graph g, Random rand, int maxHops, boolean quiet, boolean verbose, final String containingPath) {
 		File output = new File(containingPath);
 		assert output.isDirectory();
 		if (!output.exists()) {
