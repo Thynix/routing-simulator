@@ -194,7 +194,7 @@ public class RoutingSim {
 		int nIntersectTests = cmd.hasOption("intersect-tests") ? Integer.valueOf(cmd.getOptionValue("intersect-tests")) : 2;
 		//TODO: What is a sink policy? Looks like 2 is used as a hard-coded second dimension in Request, so this isn't currently a good configuration target.
 		int[] sinkPolsUsed = {0, 1};
-		int[] routePolsUsed = { cmd.hasOption("route") ? Integer.valueOf(cmd.getOptionValue("route")) : 3 };
+		int routePol = cmd.hasOption("route") ? Integer.valueOf(cmd.getOptionValue("route")) : 3;
 		int nTrials = cmd.hasOption("trials") ? Integer.valueOf(cmd.getOptionValue("trials")) : 1;
 		int maxHops = cmd.hasOption("probe") ? Integer.valueOf(cmd.getOptionValue("probe")) : 50;
 
@@ -220,6 +220,8 @@ public class RoutingSim {
 		long lastTime = startTime;
 		final boolean quiet = cmd.hasOption("quiet");
 		final boolean verbose = cmd.hasOption("verbose");
+		//TODO: Argument for this.
+		final int seed = 0;
 
 		if (!verbose) {
 			System.out.println(	"Simulating " + graphParam.length + " distinct graph parameter sets, " + nTrials + " trials each.");
@@ -300,10 +302,9 @@ public class RoutingSim {
 					probeDistribution(g, rand, maxHops, quiet, verbose);
 				}
 
-				//TODO: foreach
-				for (int rp = 0; rp < routePolsUsed.length; rp++) {
-					rand = new MersenneTwister(trial);
-					simulate(g, rand, nRequests, nIntersectTests, routePolsUsed[rp], sinkPolsUsed, verbose);
+				if (cmd.hasOption("route")) {
+					rand = new MersenneTwister(seed);
+					simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose);
 				}
 				if (verbose) System.out.println();
 			}
