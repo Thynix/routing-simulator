@@ -195,25 +195,13 @@ public class RoutingSim {
 		//TODO: What is a sink policy? Looks like 2 is used as a hard-coded second dimension in Request, so this isn't currently a good configuration target.
 		int[] sinkPolsUsed = {0, 1};
 		int routePol = cmd.hasOption("route") ? Integer.valueOf(cmd.getOptionValue("route")) : 3;
-		int nTrials = cmd.hasOption("trials") ? Integer.valueOf(cmd.getOptionValue("trials")) : 1;
 		int maxHops = cmd.hasOption("probe") ? Integer.valueOf(cmd.getOptionValue("probe")) : 50;
 
 		Random rand;
 
-		//TODO: Get rid of GraphParam.
-		GraphParam[] graphParam = {
-			new GraphParam(
-				Integer.valueOf(cmd.getOptionValue("size")),
-				Integer.valueOf(cmd.getOptionValue("local")),
-				Integer.valueOf(cmd.getOptionValue("remote")),
-				Double.valueOf(cmd.getOptionValue("low-uptime")),
-				Double.valueOf(cmd.getOptionValue("instant-reject")),
-				cmd.hasOption("evenspacing") || cmd.hasOption("fast-generation"),
-				cmd.hasOption("fast-generation"))
-			};
-
 		//TODO: What is this used for?
-		double[][][] avgStats = new double[graphParam.length][13][nTrials];
+		//TODO: Hard-coded dimensions bad - clean this up.
+		double[][][] avgStats = new double[1][13][1];
 
 		//Time tracking: report time taken for each graph setting if verbose; upon completion otherwise.
 		long startTime = System.currentTimeMillis();
@@ -224,7 +212,6 @@ public class RoutingSim {
 		final int seed = 0;
 
 		if (!verbose) {
-			System.out.println(	"Simulating " + graphParam.length + " distinct graph parameter sets, " + nTrials + " trials each.");
 			System.out.println();
 			System.out.print("p\tq\tpLow\tpInst\tevenSpacing\tfastGeneration\t");
 			Graph.printGraphStatsHeader();
@@ -232,14 +219,15 @@ public class RoutingSim {
 		}
 
 		//Run nTrials trials.
-		//TODO: Outputting degree / link lengths... no need for nTrials if command line arguments and control over seed anyway.
-		for (int trial = 0; trial < nTrials; trial++) {
-			if (!quiet) System.out.print("Trial " + trial + "... ");
-			if (verbose) System.out.println();
-			//TODO: Get rid of this loop.
-			for (int graphIter = 0; graphIter < graphParam.length; graphIter++) {
-				rand = new MersenneTwister(trial);
-				GraphParam gp = graphParam[graphIter];
+				rand = new MersenneTwister(seed);
+				GraphParam gp = new GraphParam(
+					Integer.valueOf(cmd.getOptionValue("size")),
+					Integer.valueOf(cmd.getOptionValue("local")),
+					Integer.valueOf(cmd.getOptionValue("remote")),
+					Double.valueOf(cmd.getOptionValue("low-uptime")),
+					Double.valueOf(cmd.getOptionValue("instant-reject")),
+					cmd.hasOption("evenspacing") || cmd.hasOption("fast-generation"),
+					cmd.hasOption("fast-generation"));
 
 				if (verbose) {
 					System.out.print("Generating 1d Kleinberg graph of " + gp.n + " nodes, with ");
@@ -261,7 +249,7 @@ public class RoutingSim {
 
 				double[] indivStats = g.graphStats();
 				for (int i = 0; i < 13; i++) {
-					avgStats[graphIter][i][trial] = indivStats[i];
+					avgStats[0][i][0] = indivStats[i];
 				}
 
 				if (cmd.hasOption("output-degree")) {
@@ -298,7 +286,7 @@ public class RoutingSim {
 				}
 
 				if (cmd.hasOption("probe")) {
-					rand = new MersenneTwister(trial);
+					rand = new MersenneTwister(seed);
 					probeDistribution(g, rand, maxHops, quiet, verbose);
 				}
 
@@ -307,29 +295,24 @@ public class RoutingSim {
 					simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose);
 				}
 				if (verbose) System.out.println();
-			}
 			if (!quiet) {
 				System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
-				lastTime = System.currentTimeMillis();
 			}
-		}
 
 		if (!quiet) {
 			System.out.println("Average stats:");
 			System.out.print("p\tq\tpLow\tpInst\tevenSpacing\tfastGeneration\t");
 			Graph.printGraphStatsHeader();
 			System.out.println();
-			for (int i = 0; i < graphParam.length; i++) {
-				GraphParam gp = graphParam[i];
 				System.out.print(gp.p + "\t" + gp.q + "\t" + gp.pLowUptime + "\t" +
 						gp.pInstantReject + "\t" + gp.evenSpacing + "\t" + gp.fastGeneration + "\t");
 				//TODO: Why is this hardcoded to 13?
 				for (int j = 0; j < 13; j++) {
-					ArrayStats s = new ArrayStats(avgStats[i][j]);
+					//TODO: Hard-coded dimensions bad.
+					ArrayStats s = new ArrayStats(avgStats[0][j]);
 					System.out.print("(" + outputFormat.format(s.mean()) + " " + outputFormat.format(s.stdDev()) + ")\t");
 				}
 				System.out.println();
-			}
 			System.out.println("Total time taken (ms): " + (System.currentTimeMillis() - startTime));
 		}
 	}
