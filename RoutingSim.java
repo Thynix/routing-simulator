@@ -101,7 +101,7 @@ public class RoutingSim {
 		options.addOption("l", "local", true, "Number of local connections per node.");
 		options.addOption("r", "remote", true, "Number of remote connections per node.");
 		options.addOption("I", "instant-reject", true, "Probability between 0.0 and 1.0 that a connection is instantly rejected.");
-		options.addOption("L", "low-uptime", true, "Probability between 0.0 and 1.0 that a node has low uptime.");
+		options.addOption("u", "low-uptime", true, "Probability between 0.0 and 1.0 that a node has low uptime.");
 
 		//Graphs: From degree distribution
 		options.addOption("d", "degree", true, "Use a graph following a given degree distribution. Takes a path to a degree distribution file of the format \"[degree] [number of occurrences]\\n\"");
