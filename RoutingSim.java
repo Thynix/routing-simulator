@@ -214,11 +214,11 @@ public class RoutingSim {
 
 				rand = new MersenneTwister(seed);
 				GraphParam gp = new GraphParam(
-					Integer.valueOf(cmd.getOptionValue("size")),
-					Integer.valueOf(cmd.getOptionValue("local")),
-					Integer.valueOf(cmd.getOptionValue("remote")),
-					Double.valueOf(cmd.getOptionValue("low-uptime")),
-					Double.valueOf(cmd.getOptionValue("instant-reject")),
+					cmd.hasOption("size") ? Integer.valueOf(cmd.getOptionValue("size")) : 2,
+					cmd.hasOption("local") ? Integer.valueOf(cmd.getOptionValue("local")) : 0,
+					cmd.hasOption("remote") ? Integer.valueOf(cmd.getOptionValue("remote")) : 0,
+					cmd.hasOption("low-uptime") ? Double.valueOf(cmd.getOptionValue("low-uptime")) : 0,
+					cmd.hasOption("instant-reject") ? Double.valueOf(cmd.getOptionValue("instant-reject")) : 0,
 					cmd.hasOption("evenspacing") || cmd.hasOption("fast-generation"),
 					cmd.hasOption("fast-generation"));
 
