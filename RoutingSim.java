@@ -217,7 +217,6 @@ public class RoutingSim {
 			System.out.println();
 		}
 
-		//Run nTrials trials.
 				rand = new MersenneTwister(seed);
 				GraphParam gp = new GraphParam(
 					Integer.valueOf(cmd.getOptionValue("size")),
@@ -235,7 +234,6 @@ public class RoutingSim {
 					System.out.println(", evenSpacing = " + gp.evenSpacing + ", fastGeneration = " + gp.fastGeneration);
 				}
 
-				//TODO: Graph constructor should just take GramParam instead of all its parts. (As well as MersanneTwister)
 				Graph g;
 				if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
 				else /*if (graphType == GraphGenerator.DEGREE)*/ g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"));
