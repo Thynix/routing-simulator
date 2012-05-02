@@ -34,18 +34,17 @@ public class RoutingSim {
 	 */
 	private static boolean writableDirectory(String path) {
 		File file = new File(path);
-		if (!file.isDirectory()) {
-			System.out.println("Degree output path \"" + file.getAbsolutePath() + "\" is not a directory as it should be.");
-			return false;
-		} else if (!file.exists()) {
+		if (!file.exists()) {
 			if (!file.mkdirs()) {
 				System.out.println("Unable to create degree output directory \"" + file.getAbsolutePath() + "\".");
 				return false;
 			} else {
 				System.out.println("Degree output directory \"" + file.getAbsolutePath() + "\" did not exist, so it was created.");
 			}
-		}
-		if (!file.canWrite()) {
+		} else if (!file.isDirectory()) {
+			System.out.println("Degree output path \"" + file.getAbsolutePath() + "\" is not a directory as it should be.");
+			return false;
+		} else if (!file.canWrite()) {
 			System.out.println("No write access to degree output directory \"" + file.getAbsolutePath() + "\".");
 			return false;
 		}
