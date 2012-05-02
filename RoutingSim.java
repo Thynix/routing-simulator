@@ -110,7 +110,6 @@ public class RoutingSim {
 		//TODO: But what do the various numbers actually mean?
 		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --trials, --requests, and --intersect-tests be specified.");
 		//TODO: Explain more on these - what are their effects?
-		options.addOption("t", "trials", true, "Number of trials to run.");
 		options.addOption("q", "requests", true, "Number of requests to run.");
 		options.addOption("n", "intersect-tests", true, "Number of intersect tests per request: same target but random origin.");
 
