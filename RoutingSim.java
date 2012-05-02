@@ -80,13 +80,13 @@ public class RoutingSim {
 		Options options = new Options();
 		//TODO: Default values for arguments.
 		//TODO: Line lengths.
-		//TODO: --help
 		//Overall
 		options.addOption("D", "output-degree", true, "Output file for degree distribution.");
 		options.addOption("L", "output-link", true, "Output file for link length distribution.");
 		//TODO: Output routing simulation results to file
 		options.addOption("q", "quiet", false, "No simulation output to stdout. Messages about arguments are still output.");
 		options.addOption("v", "verbose", false, "Progress updates.");
+		options.addOption("h", "help", false, "Display this message.");
 		//TODO: Specify random seed
 
 		//Graphs: General generation options
@@ -124,6 +124,12 @@ public class RoutingSim {
 		CommandLineParser parser = new GnuParser();
 		CommandLine cmd = parser.parse(options, args);
 
+		if (cmd.hasOption("help")) {
+			HelpFormatter formatter = new HelpFormatter();
+			//TODO: jar n' stuff
+			formatter.printHelp( "java -jar simulator.jar", options );
+			return;
+		}
 		//Check that required arguments are specified and that combinations make sense.
 		if (cmd.hasOption("quiet") && cmd.hasOption("verbose")) {
 			System.out.println("Quiet with verbose does not make sense.");
