@@ -1,3 +1,5 @@
+import org.apache.commons.cli.*;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -12,12 +14,60 @@ import java.util.Random;
  */
 public class RoutingSim {
 	//E-series preferred numbers
+	//TODO: What are these for? Don't appear to be used.
 	public static final int[] Esix =    {	10,	15,	22,	33,	47,	68	};
 	public static final int[] Etwelve = {	10, 12, 15, 18, 22, 27, 33, 39, 47, 56, 68, 82	};
 
 	//generic output format
 	static DecimalFormat outputFormat = new DecimalFormat("0.000000");
-	
+
+	private enum GraphGenerator {
+		DEGREE,
+		IDEAL
+	}
+
+	/**
+	 * Checks that a path is a directory which can be written to, and attempts to create it if it does not exist.
+	 * Outputs descriptive messages if given anything other than an existing writable directory.
+	 * @param path path to check
+	 * @return True if the directory (now) exists and is writable; false otherwise.
+	 */
+	private static boolean writableDirectory(String path) {
+		File file = new File(path);
+		if (!file.isDirectory()) {
+			System.out.println("Degree output path \"" + file.getAbsolutePath() + "\" is not a directory as it should be.");
+			return false;
+		} else if (!file.exists()) {
+			if (!file.mkdirs()) {
+				System.out.println("Unable to create degree output directory \"" + file.getAbsolutePath() + "\".");
+				return false;
+			} else {
+				System.out.println("Degree output directory \"" + file.getAbsolutePath() + "\" did not exist, so it was created.");
+			}
+		}
+		if (!file.canWrite()) {
+			System.out.println("No write access to degree output directory \"" + file.getAbsolutePath() + "\".");
+			return false;
+		}
+		return true;
+	}
+
+	/**
+	 * Attempts to open the given path for writing.
+	 * @param path File to open.
+	 * @return If successful, an output stream for the file. If not, outputs a message and returns null.
+	 */
+	private static FileOutputStream writableFile(String path) {
+		try {
+			return new FileOutputStream(new File(path));
+		} catch (FileNotFoundException e) {
+			System.out.println("Unable to open \"" + path + "\" for output:");
+			System.out.println(e);
+			e.printStackTrace();
+			return null;
+		}
+	}
+
 	/**
 	 * Main simulator program.  Generate a set of graphs of different
 	 * parameters, run a set of requests on them, and print assorted
@@ -25,81 +75,136 @@ public class RoutingSim {
 	 *
 	 * @param args Command-line arguments; not used.
 	 */
-	public static void main(String[] args) {
-		int nRequests = 25000;
-		int nIntersectTests = 2;
-		int[] sinkPolsUsed = {0, 1};
-		//TODO: What are these? What is a pol?
-		int[] routePolsUsed = {3};
-		int nTrials = 1;
+	public static void main(String[] args) throws ParseException {
+		//TODO: All this options stuff is an ugly, verbose mess. Is there some way to clean it up or at least move it somewhere else? Maybe main only does options parsing? (Then calls other stuff.)
+		Options options = new Options();
+		//TODO: Default values for arguments.
+		//TODO: Line lengths.
+		//TODO: --help
+		//Overall
+		options.addOption("D", "output-degree", true, "Output file for degree distribution.");
+		options.addOption("L", "output-link", true, "Output file for link length distribution.");
+		//TODO: Output routing simulation results to file
+		options.addOption("q", "quiet", false, "No simulation output to stdout. Messages about arguments are still output.");
+		options.addOption("v", "verbose", false, "Progress updates.");
+		//TODO: Specify random seed
 
-		boolean printGraphStats = true;
-		boolean printPairedMaxHTI = false;
-		boolean verbose = false;
-		boolean printIndivStats = true;
-		boolean printAvgStats = false;
+		//Graphs: General generation options
+		//TODO: Scale degree distribution (Also results?) to arbitrary network size - attempt to avoid distortion.
+		options.addOption("s", "size", true, "Number of nodes in the network. Currently ignored when using --degree unless --force-size is specified.");
+		//TODO: Does it make sense to use fastGeneration without evenSpacing? Assuming it doesn't.
+		options.addOption("f", "fast-generation", false, "If present, the simulator will assign locations as per --evenspacing and take shortcuts to speed up graph generation.");
+		options.addOption("e", "even-spacing", false, "If present, the simulator will space nodes evenly throughout locations.");
+
+		//Graphs: 1D Kleinberg
+		options.addOption("i", "ideal", false, "Use an ideal 1D Kleinberg graph. Requires that --size, --local, --remote, --instant-reject, and --low-uptime be specified.");
+		options.addOption("l", "local", true, "Number of local connections per node.");
+		options.addOption("r", "remote", true, "Number of remote connections per node.");
+		options.addOption("I", "instant-reject", true, "Probability between 0.0 and 1.0 that a connection is instantly rejected.");
+		options.addOption("L", "low-uptime", true, "Probability between 0.0 and 1.0 that a node has low uptime.");
+
+		//Graphs: From degree distribution
+		options.addOption("d", "degree", true, "Use a graph following a given degree distribution. Takes a path to a degree distribution file of the format \"[degree] [number of occurrences]\\n\"");
+		options.addOption("F", "force-size", false, "When using --degree force generation of --size nodes. May cause severe distortion.");
+
+		//Simulations: Routing policies
+		//TODO: But what do the various numbers actually mean?
+		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --trials, --requests, and --intersect-tests be specified.");
+		//TODO: Explain more on these - what are their effects?
+		options.addOption("t", "trials", true, "Number of trials to run.");
+		options.addOption("q", "requests", true, "Number of requests to run.");
+		options.addOption("n", "intersect-tests", true, "Number of intersect tests per request: same target but random origin.");
+
+		//Simulations: Probe distribution
+		options.addOption("p", "probe", true, "Simulate running probes from random locations for the specified number of maximum hops. Requires that --output-probe be specified.");
+		//TODO: Support MH toggling.
+		options.addOption("m", "metropolis-hastings", false, "If present, probes will be routed with Metropolis-Hastings correction. If not, peers will be selected entirely at random.");
+		options.addOption("O", "output-probe", true, "Directory to which probe distribution is output as \"[node ID] [times seen]\\n\" for a reference of random selection from the whole and at each hop up to the specified maximum hops.");
+
+		CommandLineParser parser = new GnuParser();
+		CommandLine cmd = parser.parse(options, args);
+
+		//Check that required arguments are specified and that combinations make sense.
+		if (cmd.hasOption("quiet") && cmd.hasOption("verbose")) {
+			System.out.println("Quiet with verbose does not make sense.");
+			return;
+		}
+		if (!cmd.hasOption("ideal") && !cmd.hasOption("degree")) {
+			System.out.println("No graph specified on which to perform simulations.");
+			return;
+		}
+		if (cmd.hasOption("quiet") && !((cmd.hasOption("probe") && cmd.hasOption("probe-output")) || cmd.hasOption("output-degree") || cmd.hasOption("output-link"))) {
+			System.out.println("Simulation will produce no output: --quiet is specified, but not any option which outputs to a file.");
+		}
+		if (cmd.hasOption("ideal") && cmd.hasOption("degree")) {
+			System.out.println("Graph cannot be generated with multiple methods at once.");
+			return;
+		}
+		if (!cmd.hasOption("ideal") && !cmd.hasOption("degree")) {
+			System.out.println("No graph generation method specified.");
+			return;
+		}
+		if (cmd.hasOption("ideal") && (!cmd.hasOption("size") || !cmd.hasOption("local") || !cmd.hasOption("remote") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime"))) {
+			System.out.println("--ideal was specified, but not one or more of its required parameters: --size, --local, --remote, --instant-reject, --low-uptime.");
+			return;
+		}
+		if (cmd.hasOption("degree") && cmd.hasOption("force-size") && !cmd.hasOption("size")) {
+			System.out.println("--degree and --force-size were specified but not --size.");
+			return;
+		}
+		if (cmd.hasOption("route") && (!cmd.hasOption("trials") || !cmd.hasOption("requests") || !cmd.hasOption("intersect-tests"))) {
+			System.out.println("--route was specified, but not one or more of its required parameters: --trials, --requests, --intersect-tests.");
+			return;
+		}
+		if (cmd.hasOption("probe") && !cmd.hasOption("output-probe")) {
+			System.out.println("--probe was specified, but not --output-probe.");
+			return;
+		}
+
+		//Check for problems with specified paths.
+		//Check if input files can be read.
+		if (cmd.hasOption("degree")) {
+			File file = new File(cmd.getOptionValue("degree"));
+			if (!file.exists() || !file.canRead() || !file.isFile()) {
+				System.out.println("Cannot read \"" + file.getAbsolutePath() + "\" as a file.");
+				return;
+			}
+		}
+
+		//Check if output paths are directories that can be written to, and create them if they do not exist.
+		if (cmd.hasOption("output-probe") && !writableDirectory(cmd.getOptionValue("output-probe"))) return;
+
+		//Check that output files exist and are writable or can be created.
+		FileOutputStream degreeOutput = null, linkOutput = null;
+		if (cmd.hasOption("output-degree") && (degreeOutput = writableFile(cmd.getOptionValue("output-degree"))) == null ) return;
+		if (cmd.hasOption("output-link") && (linkOutput = writableFile(cmd.getOptionValue("output-link"))) == null) return;
+
+
+		final GraphGenerator graphType;
+		if (cmd.hasOption("ideal")) graphType = GraphGenerator.IDEAL;
+		else /*if (cmd.hasOption(""))*/ graphType = GraphGenerator.DEGREE;
+
+		int nRequests = cmd.hasOption("requests") ? Integer.valueOf(cmd.getOptionValue("requests")) : 4000;
+		int nIntersectTests = cmd.hasOption("intersect-tests") ? Integer.valueOf(cmd.getOptionValue("intersect-tests")) : 2;
+		//TODO: What is a sink policy? Looks like 2 is used as a hard-coded second dimension in Request, so this isn't currently a good configuration target.
+		int[] sinkPolsUsed = {0, 1};
+		int[] routePolsUsed = { cmd.hasOption("route") ? Integer.valueOf(cmd.getOptionValue("route")) : 3 };
+		int nTrials = cmd.hasOption("trials") ? Integer.valueOf(cmd.getOptionValue("trials")) : 1;
+		int maxHops = cmd.hasOption("probe") ? Integer.valueOf(cmd.getOptionValue("probe")) : 50;
 
 		Random rand;
 
-		int[] graph_n;
-		int[] graph_p;
-		int[] graph_q;
-		double[] graph_pLow;
-		double[] graph_pInstant;
-		boolean[][] graph_genMode;
-
-		/*
-		graph_n = {100, 330, 1000, 1500, 2200, 3300, 4700, 6800, 10000};
-		graph_p = {0, 1};
-		graph_q = {4, 5, 6, 7, 8};
-		graph_pLow = {0.1};
-		graph_pInstant = {0.};
-		graph_genMode = {{true, true}, {true, false}, {false, false}};	//{evenSpacing, fastGeneration}
-		*/
-
-		/* Initialize each combination of graphParams.
-		 * n: Network size.
-		 * p: Local connections per node.
-		 * q: Remote connections per node.
-		 * pLow: Probability of low uptime. High/low uptime is used when tabulating sinks to categorize as high
-		 *       or low uptime.
-		 * pInstant: Probability that a request to route is instantly rejected.
-		 * evenSpacing: True: locations are distributed uniformly throughout the network.
-		 *              False: locations are uniformly random.
-		 * fastGeneration: True: assumes even distribution for simpler connection generation.
-		 *                 False: precise connection generation but involves more computation and may be slower.
-		 */
-		//Network size.
-		graph_n = new int[] {10000};
-		//Local connections per node.
-		graph_p = new int[] {0};
-		//Remote connections per node.
-		graph_q = new int[] {6};
-
-		int maxHops = 50;
-		graph_pLow = new double[] {0.1};
-		graph_pInstant = new double[] {0.0};
-		graph_genMode = new boolean[][] {{false, false}};	//{evenSpacing, fastGeneration}
-
-		GraphParam[] graphParam;
-		graphParam = new GraphParam[graph_n.length * graph_p.length *
-			graph_q.length * graph_pLow.length * graph_pInstant.length *
-			graph_genMode.length];
-
-		int graph_idx = 0;
-		for (int n : graph_n) {
-			for (int p : graph_p) {
-				for (int q : graph_q) {
-					for (double pLow : graph_pLow) {
-						for (double pInstant : graph_pInstant) {
-							for (boolean[] genMode : graph_genMode) {
-								graphParam[graph_idx++] = new GraphParam(n, p, q, pLow, pInstant, genMode[0], genMode[1]);
-							}
-						}
-					}
-				}
-			}
-		}
+		//TODO: Get rid of GraphParam.
+		GraphParam[] graphParam = {
+			new GraphParam(
+				Integer.valueOf(cmd.getOptionValue("size")),
+				Integer.valueOf(cmd.getOptionValue("local")),
+				Integer.valueOf(cmd.getOptionValue("remote")),
+				Double.valueOf(cmd.getOptionValue("low-uptime")),
+				Double.valueOf(cmd.getOptionValue("instant-reject")),
+				cmd.hasOption("evenspacing") || cmd.hasOption("fast-generation"),
+				cmd.hasOption("fast-generation"))
+			};
 
 		//TODO: What is this used for?
 		double[][][] avgStats = new double[graphParam.length][13][nTrials];
@@ -107,39 +212,40 @@ public class RoutingSim {
 		//Time tracking: report time taken for each graph setting if verbose; upon completion otherwise.
 		long startTime = System.currentTimeMillis();
 		long lastTime = startTime;
+		final boolean quiet = cmd.hasOption("quiet");
+		final boolean verbose = cmd.hasOption("verbose");
 
-		System.out.println(	"Simulating " + graphParam.length + " distinct graph parameter sets, " + nTrials + " trials each.");
-		System.out.println();
-
-		if (!verbose && printIndivStats) {
+		if (!verbose) {
+			System.out.println(	"Simulating " + graphParam.length + " distinct graph parameter sets, " + nTrials + " trials each.");
+			System.out.println();
 			System.out.print("p\tq\tpLow\tpInst\tevenSpacing\tfastGeneration\t");
 			Graph.printGraphStatsHeader();
 			System.out.println();
 		}
 
 		//Run nTrials trials.
+		//TODO: Outputting degree / link lengths... no need for nTrials if command line arguments and control over seed anyway.
 		for (int trial = 0; trial < nTrials; trial++) {
-			System.out.print("Trial " + trial + "... ");
-			if (verbose || printIndivStats) System.out.println();
+			if (!quiet) System.out.print("Trial " + trial + "... ");
+			if (verbose) System.out.println();
+			//TODO: Get rid of this loop.
 			for (int graphIter = 0; graphIter < graphParam.length; graphIter++) {
 				rand = new MersenneTwister(trial);
 				GraphParam gp = graphParam[graphIter];
 
-				if (printGraphStats) {
-					if (verbose) {
-						System.out.print("Generating 1d Kleinberg graph of " + gp.n + " nodes, with ");
-						System.out.println("parameters p = " + gp.p + ", q = " + gp.q + ".");
-						System.out.print("pLowUptime = " + gp.pLowUptime + ", pInstantReject = " + gp.pInstantReject);
-						System.out.println(", evenSpacing = " + gp.evenSpacing + ", fastGeneration = " + gp.fastGeneration);
-					} else if (printIndivStats) {
-						System.out.print(gp.p + "\t" + gp.q + "\t" + gp.pLowUptime + "\t" +
-								gp.pInstantReject + "\t" + gp.evenSpacing + "\t" + gp.fastGeneration + "\t");
-					}
+				if (verbose) {
+					System.out.print("Generating 1d Kleinberg graph of " + gp.n + " nodes, with ");
+					System.out.println("parameters p = " + gp.p + ", q = " + gp.q + ".");
+					System.out.print("pLowUptime = " + gp.pLowUptime + ", pInstantReject = " + gp.pInstantReject);
+					System.out.println(", evenSpacing = " + gp.evenSpacing + ", fastGeneration = " + gp.fastGeneration);
 				}
 
 				//TODO: Graph constructor should just take GramParam instead of all its parts. (As well as MersanneTwister)
-				Graph g = Graph.generatePeerDistGraph(gp, rand, "../../stats/peerDist_1407.dat");
-				if (printGraphStats && printIndivStats) g.printGraphStats(verbose);
+				Graph g;
+				if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
+				else /*if (graphType == GraphGenerator.DEGREE)*/ g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"));
+
+				if (!quiet) g.printGraphStats(verbose);
 				if (verbose) {
 					System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
 					lastTime = System.currentTimeMillis();
@@ -150,20 +256,58 @@ public class RoutingSim {
 					avgStats[graphIter][i][trial] = indivStats[i];
 				}
 
+				if (cmd.hasOption("output-degree")) {
+					int[] degrees = new int[g.maxDegree() + 1];
+					for (int degree : g.degrees()) {
+						degrees[degree]++;
+					}
+					for (int i = 0; i < g.maxDegree(); i++) {
+						try {
+							degreeOutput.write((i + " " + degrees[i] + "\n").getBytes());
+						} catch (IOException e) {
+							System.out.println("Unexpected error encoding string for degree output:");
+							System.out.println(e);
+							e.printStackTrace();
+							return;
+						}
+					}
+				}
+
+				if (cmd.hasOption("output-link")) {
+					double[] lengths = g.edgeLengths();
+					//Output is intended for gnuplot CDF - second value is Y and should sum to 1.
+					double normalized = 1.0/lengths.length;
+					for (double length : lengths) {
+						try {
+							linkOutput.write((length + " " + normalized + "\n").getBytes());
+						} catch (IOException e) {
+							System.out.println("Unexpected error encoding string for link length output:");
+							System.out.println(e);
+							e.printStackTrace();
+							return;
+						}
+					}
+				}
+
+				if (cmd.hasOption("probe")) {
+					rand = new MersenneTwister(trial);
+					probeDistribution(g, rand, maxHops, quiet, verbose);
+				}
+
 				//TODO: foreach
 				for (int rp = 0; rp < routePolsUsed.length; rp++) {
 					rand = new MersenneTwister(trial);
-					simulate(g, rand, nRequests, nIntersectTests, routePolsUsed[rp], sinkPolsUsed, printPairedMaxHTI, maxHops);
+					simulate(g, rand, nRequests, nIntersectTests, routePolsUsed[rp], sinkPolsUsed, verbose);
 				}
-				if (verbose || printIndivStats) System.out.println();
+				if (verbose) System.out.println();
 			}
-			if (!verbose) {
+			if (!quiet) {
 				System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
 				lastTime = System.currentTimeMillis();
 			}
 		}
 
-		if (printAvgStats) {
+		if (!quiet) {
 			System.out.println("Average stats:");
 			System.out.print("p\tq\tpLow\tpInst\tevenSpacing\tfastGeneration\t");
 			Graph.printGraphStatsHeader();
@@ -179,8 +323,8 @@ public class RoutingSim {
 				}
 				System.out.println();
 			}
+			System.out.println("Total time taken (ms): " + (System.currentTimeMillis() - startTime));
 		}
-		System.out.println("Total time taken (ms): " + (System.currentTimeMillis() - startTime));
 	}
 
 	/**
@@ -207,7 +351,7 @@ public class RoutingSim {
 		}
 	}
 
-	public static void probeDistribution(Graph g, Random rand, int maxHops) {
+	public static void probeDistribution(Graph g, Random rand, int maxHops, boolean quiet, boolean verbose) {
 		final String containingPath = "occurenceDistribution/";
 		File output = new File(containingPath);
 		assert output.isDirectory();
@@ -547,6 +691,7 @@ public class RoutingSim {
 		for (int i = 0; i < a.length - 1; i++) if (a[i] > a[i+1]) return false;
 		return true;
 	}
+
 	/* TODO: Is there an alternative to copy-pasting to get array summary for both doubles and ints?
 	 * Using Generics with <? extends Number> doesn't seem helpful as it wouldn't support operators and there are no
 	 * common methods in Number.
