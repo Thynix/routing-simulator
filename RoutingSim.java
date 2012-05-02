@@ -133,7 +133,7 @@ public class RoutingSim {
 			System.out.println("Quiet with verbose does not make sense.");
 			return;
 		}
-		if (cmd.hasOption("quiet") && !((cmd.hasOption("probe") && cmd.hasOption("probe-output")) || cmd.hasOption("output-degree") || cmd.hasOption("output-link"))) {
+		if (cmd.hasOption("quiet") && !((cmd.hasOption("probe") && cmd.hasOption("output-probe")) || cmd.hasOption("output-degree") || cmd.hasOption("output-link"))) {
 			System.out.println("Simulation will produce no output: --quiet is specified, but not any option which outputs to a file.");
 		}
 		if (cmd.hasOption("ideal") && cmd.hasOption("degree")) {
