@@ -108,7 +108,7 @@ public class RoutingSim {
 
 		//Simulations: Routing policies
 		//TODO: But what do the various numbers actually mean?
-		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --trials, --requests, and --intersect-tests be specified.");
+		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --instant-reject, --low-uptime, --requests, and --intersect-tests be specified.");
 		//TODO: Explain more on these - what are their effects?
 		options.addOption("q", "requests", true, "Number of requests to run.");
 		options.addOption("n", "intersect-tests", true, "Number of intersect tests per request: same target but random origin.");
@@ -144,16 +144,16 @@ public class RoutingSim {
 			System.out.println("No graph generation method specified.");
 			return;
 		}
-		if (cmd.hasOption("ideal") && (!cmd.hasOption("size") || !cmd.hasOption("local") || !cmd.hasOption("remote") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime"))) {
-			System.out.println("--ideal was specified, but not one or more of its required parameters: --size, --local, --remote, --instant-reject, --low-uptime.");
+		if (cmd.hasOption("ideal") && (!cmd.hasOption("size") || !cmd.hasOption("local") || !cmd.hasOption("remote"))) {
+			System.out.println("--ideal was specified, but not one or more of its required parameters: --size, --local, --remote.");
 			return;
 		}
 		if (cmd.hasOption("degree") && cmd.hasOption("force-size") && !cmd.hasOption("size")) {
 			System.out.println("--degree and --force-size were specified but not --size.");
 			return;
 		}
-		if (cmd.hasOption("route") && (!cmd.hasOption("trials") || !cmd.hasOption("requests") || !cmd.hasOption("intersect-tests"))) {
-			System.out.println("--route was specified, but not one or more of its required parameters: --trials, --requests, --intersect-tests.");
+		if (cmd.hasOption("route") && (!cmd.hasOption("requests") || !cmd.hasOption("intersect-tests") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime"))) {
+			System.out.println("--route was specified, but not one or more of its required parameters: --requests, --intersect-tests, --instant-reject, --low-uptime.");
 			return;
 		}
 		if (cmd.hasOption("probe") && !cmd.hasOption("output-probe")) {
