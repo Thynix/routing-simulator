@@ -50,9 +50,10 @@ public class Graph {
 	 * @return
 	 */
 	public static Graph generatePeerDistGraph(GraphParam param, Random rand, String filename) {
+		WeightedDistribution distribution = new WeightedDistribution(filename, new Random(rand.nextLong()));
+		param = new GraphParam(distribution.totalOccurances, param.p, param.q, param.pLowUptime, param.pInstantReject, param.evenSpacing, param.fastGeneration);
 		Graph g = new Graph(param.n);
 		g.generateNodes(param, rand);
-		WeightedDistribution distribution = new WeightedDistribution(filename, new Random(rand.nextLong()));
 		for (SimpleNode node : g.nodes) {
 			g.nodes.set(node.index, new WeightedDegreeNode(node.getLocation(), node.lowUptime(), param.pInstantReject, rand, distribution));
 			g.nodes.get(node.index).index = node.index;
