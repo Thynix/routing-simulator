@@ -231,7 +231,7 @@ public class RoutingSim {
 
 				Graph g;
 				if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
-				else /*if (graphType == GraphGenerator.DEGREE)*/ g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"));
+				else /*if (graphType == GraphGenerator.DEGREE)*/ g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"), cmd.hasOption("force-size"));
 
 				if (!quiet) g.printGraphStats(verbose);
 				if (verbose) {
