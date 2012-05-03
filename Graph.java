@@ -100,7 +100,6 @@ public class Graph {
 						norm += 1.0 / Location.distance(src.getLocation(), g.nodes.get(j).getLocation());
 					}
 					sumProb[j] = norm;
-					//TODO: That norm increased? Wouldn't it only decrease if distance is negative?
 					if (j > 0) assert sumProb[j] >= sumProb[j-1];
 				}
 
