@@ -44,14 +44,15 @@ public class Graph {
 	//TODO: Using GraphParam as an argument is beginning to smell: this takes additional arguments and ignores the number of close connections.
 	/**
 	 * Generates a graph with only long connections and a peer count distribution as described in the given file.
-	 * @param param
-	 * @param rand
+	 * @param param graph generation parameters. Local and remote connections irrelevant as given distribution is followed.
+	 * @param rand used for random numbers
 	 * @param filename Desired occurrences in format of "[number of peers] [occurrences]" on each line.
-	 * @return
+	 * @param forceSize If true, the size in param is used. If not, the sum of occurrences in the distribution file.
+	 * @return specified graph
 	 */
-	public static Graph generatePeerDistGraph(GraphParam param, Random rand, String filename) {
+	public static Graph generatePeerDistGraph(GraphParam param, Random rand, String filename, boolean forceSize) {
 		WeightedDistribution distribution = new WeightedDistribution(filename, new Random(rand.nextLong()));
-		param = new GraphParam(distribution.totalOccurances, param.p, param.q, param.pLowUptime, param.pInstantReject, param.evenSpacing, param.fastGeneration);
+		param = new GraphParam(forceSize ? param.n : distribution.totalOccurances, param.p, param.q, param.pLowUptime, param.pInstantReject, param.evenSpacing, param.fastGeneration);
 		Graph g = new Graph(param.n);
 		g.generateNodes(param, rand);
 		for (SimpleNode node : g.nodes) {
