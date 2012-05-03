@@ -279,7 +279,8 @@ public class RoutingSim {
 
 				if (cmd.hasOption("probe")) {
 					rand = new MersenneTwister(seed);
-					probeDistribution(g, rand, maxHops, quiet, verbose, cmd.getOptionValue("output-probe"));
+					//Uniform probes if --metropolis-hastings is not specified.
+					probeDistribution(g, rand, maxHops, quiet, verbose, cmd.getOptionValue("output-probe"), !cmd.hasOption("metropolis-hastings"));
 				}
 
 				if (cmd.hasOption("route")) {
@@ -333,7 +334,7 @@ public class RoutingSim {
 		}
 	}
 
-	public static void probeDistribution(Graph g, Random rand, int maxHops, boolean quiet, boolean verbose, final String containingPath) {
+	public static void probeDistribution(Graph g, Random rand, int maxHops, boolean quiet, boolean verbose, final String containingPath, boolean uniform) {
 		File output = new File(containingPath);
 		assert output.isDirectory();
 		if (!output.exists()) {
@@ -375,8 +376,7 @@ public class RoutingSim {
 			SimpleNode source = g.getNode(rand.nextInt(g.size()));
 			SimpleNode alongTrace;
 			for (int walk = 0; walk < nProbes; walk++) {
-				//False: not using uniform routing: MH correction.
-				trace = source.randomWalkList(maxHops, false, rand);
+				trace = source.randomWalkList(maxHops, uniform, rand);
 				//Traces: starting point (zero hops), then maxHops hops from there.
 				assert trace.size() == maxHops + 1;
 				for (int fromEnd = 0; fromEnd <= maxHops; fromEnd++) {
