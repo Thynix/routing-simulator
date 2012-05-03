@@ -1,6 +1,8 @@
 set terminal png size 1200,800
 set output "probeDistribution.png"
 
+set key left top
+
 set xrange [0:]
 
 set title "Ideal Degree Distribution"
