@@ -1,3 +1,5 @@
+package org.freenetproject.routing_simulator;
+
 import static java.lang.Math.ceil;
 import static java.lang.Math.sqrt;
 

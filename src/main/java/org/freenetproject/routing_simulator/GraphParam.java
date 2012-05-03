@@ -1,3 +1,5 @@
+package org.freenetproject.routing_simulator;
+
 /**
  * Class to specify graph parameters for Kleinberg etc graphs.
  */

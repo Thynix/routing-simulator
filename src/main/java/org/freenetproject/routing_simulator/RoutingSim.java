@@ -1,3 +1,5 @@
+package org.freenetproject.routing_simulator;
+
 import org.apache.commons.cli.*;
 
 import java.io.File;

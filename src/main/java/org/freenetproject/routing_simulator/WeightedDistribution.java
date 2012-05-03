@@ -1,3 +1,5 @@
+package org.freenetproject.routing_simulator;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.Random;

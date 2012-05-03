@@ -1,3 +1,5 @@
+package org.freenetproject.routing_simulator;
+
 /**
  * Simple locations.
  */
