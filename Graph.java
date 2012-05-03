@@ -171,6 +171,10 @@ public class Graph {
 				//Assumes nodes are sorted in location order.
 				double maxSteps = n / 2.0;
 				for (int j = 0; j < q; j++) {
+					/*
+					 * The array is sorted by location and evenly spaced, so a change in index goes
+					 * a consistent distance away.
+					 */
 					int steps = (int)Math.round(Math.pow(maxSteps, rand.nextDouble()));
 					assert steps >= 0 && steps <= n / 2;
 					int idx = rand.nextBoolean() ? i + steps : i - steps;
@@ -188,20 +192,45 @@ public class Graph {
 				//Does not require sorted node order.
 				//Precisely accurate even with uneven locations and small graph size.
 
-				//Find normalizing constant for this node
+				/*
+				 * Find normalizing constant for this node - sum distance probabilities so that they
+				 * they are in increasing order and may be searched through to find the closest link.
+				 * Note that this means here the probability is proportional to 1/distance.
+				 * sumProb is a non-normalized CDF of probabilities by node index.
+				 */
 				double norm = 0.0;
 				for (int j = 0; j < n; j++) {
 					if (i != j) {
 						norm += 1.0 / Location.distance(src.getLocation(), g.nodes.get(j).getLocation());
 					}
 					sumProb[j] = norm;
+					//CDF must be non-decreasing
 					if (j > 0) assert sumProb[j] >= sumProb[j-1];
 				}
 
-				//Make q distant connections
+				/* Make q distant connections - */
 				for (int j = 0; j < q; j++) {
+					/*
+					 * sumProb is a CDF, so to weight by it pick a "Y value" and find closest index.
+					 * norm is now the highest (and last) value in the CDF, so this is picking
+					 * a distance probability sum and finding the closest node for that distance.
+					 * Because there are more nodes which match values in highly represented domains
+					 * (steeper in the CDF) a random value is more likely to be in those areas.
+					 */
 					double x = rand.nextDouble() * norm;
+					assert x <= norm;
 					int idx = Arrays.binarySearch(sumProb, x);
+					/*
+					 * If such value is not actually present, as it might not be due to being
+					 * floating point, use the index where it would be inserted:
+					 * idx = -insertion point - 1
+					 * insertion point = -1 - idx
+					 * The insertion point would be the length of the array and thus out of bounds
+					 * if all elements were less than it, but this will not happen as norm is the
+					 * greatest element and nextDouble() is [0, 1). This does not mean it will not
+					 * choose the greatest element as insertion point is the index of the first
+					 * greater element.
+					 */
 					if (idx < 0) idx = -1 - idx;
 					dest = g.nodes.get(idx);
 					if (src == dest || src.isConnected(dest)) {
