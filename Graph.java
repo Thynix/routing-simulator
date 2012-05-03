@@ -230,8 +230,14 @@ public class Graph {
 					 * greatest element and nextDouble() is [0, 1). This does not mean it will not
 					 * choose the greatest element as insertion point is the index of the first
 					 * greater element.
+					 * TODO: Does this result in choosing the greater value when the lesser is closer? Looks like it yes.
 					 */
 					if (idx < 0) idx = -1 - idx;
+					//idx is index of the first greater element, but use the lesser if it is closer.
+					if (idx > 0 && Math.abs(x - sumProb[idx - 1]) < Math.abs(x - sumProb[idx])) idx--;
+					//Assert that this actually is the closest.
+					if (idx > 0) assert Math.abs(x - sumProb[idx]) < Math.abs(x - sumProb[idx - 1]);
+					if (idx < sumProb.length - 1) assert Math.abs(x - sumProb[idx]) < Math.abs(x - sumProb[idx + 1]);
 					dest = g.nodes.get(idx);
 					if (src == dest || src.isConnected(dest)) {
 						j--;
