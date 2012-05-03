@@ -115,7 +115,6 @@ public class RoutingSim {
 
 		//Simulations: Probe distribution
 		options.addOption("p", "probe", true, "Simulate running probes from random locations for the specified number of maximum hops. Requires that --output-probe be specified.");
-		//TODO: Support MH toggling.
 		options.addOption("m", "metropolis-hastings", false, "If present, probes will be routed with Metropolis-Hastings correction. If not, peers will be selected entirely at random.");
 		options.addOption("O", "output-probe", true, "Directory to which probe distribution is output as \"[node ID] [times seen]\\n\" for a reference of random selection from the whole and at each hop up to the specified maximum hops.");
 
