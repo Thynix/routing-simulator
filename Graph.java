@@ -62,7 +62,7 @@ public class Graph {
 
 		//Probability of not making a connection with a peer which has its desired degree.
 		final double rejectProbability = 0.98;
-		//TODO: Some way to get desired peer distributions cleanly? This is copy-paste from below because it needs to drop out mid-loop.
+		//TODO: Some way to get desired peer distributions cleanly? This is copy-paste from generate1dKleinbergGraph because it needs to drop out mid-loop.
 		//make far links
 		double[] sumProb = new double[param.n];
 		for (int i = 0; i < param.n; i++) {
