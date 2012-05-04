@@ -5,8 +5,7 @@ set key left top
 
 set xrange [0:]
 
-set title "Ideal Degree Distribution"
-#set title "Measured Degree Distribution"
+set title "Degree Distribution"
 set xlabel "Node number"
 set ylabel "Cumulative Appearances"
 
