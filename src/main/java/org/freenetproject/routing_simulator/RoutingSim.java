@@ -89,7 +89,7 @@ public class RoutingSim {
 		options.addOption("v", "verbose", false, "Progress updates.");
 		options.addOption("h", "help", false, "Display this message.");
 		options.addOption("v", "version", false, "Display software version.");
-		//TODO: Specify random seed
+		options.addOption("S", "seed", true, "Seed used by psuedorandom number generator.");
 
 		//Graphs: General generation options
 		//TODO: Scale degree distribution (Also results?) to arbitrary network size - attempt to avoid distortion.
@@ -209,8 +209,7 @@ public class RoutingSim {
 		long lastTime = startTime;
 		final boolean quiet = cmd.hasOption("quiet");
 		final boolean verbose = cmd.hasOption("verbose");
-		//TODO: Argument for this.
-		final int seed = 0;
+		final int seed = cmd.hasOption("seed") ? Integer.valueOf(cmd.getOptionValue("seed")) : 0;
 
 		if (!verbose) {
 			System.out.println();
