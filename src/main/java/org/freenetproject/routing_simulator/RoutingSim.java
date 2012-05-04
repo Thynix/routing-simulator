@@ -358,9 +358,12 @@ public class RoutingSim {
 		final int nProbes = g.size();
 		System.out.println("Determining baseline");
 		int[] occurrences = new int[g.size()];
-		//Find baseline for visibility by selecting nodes from the entire network at random.
+		/*
+		 * Find baseline for visibility by selecting the same number of nodes from the entire network at random
+		 * as endpoints at each HTL.
+		 */
 		for (int i = 0; i < nTrials; i++) {
-			for (int walk = 0; walk < g.size(); walk++) {
+			for (int walk = 0; walk < nProbes; walk++) {
 				occurrences[g.getNode(rand.nextInt(g.size())).index]++;
 			}
 		}
