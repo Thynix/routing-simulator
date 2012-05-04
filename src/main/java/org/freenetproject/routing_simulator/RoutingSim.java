@@ -125,7 +125,6 @@ public class RoutingSim {
 
 		if (cmd.hasOption("help")) {
 			HelpFormatter formatter = new HelpFormatter();
-			//TODO: jar n' stuff
 			formatter.printHelp( "java -jar simulator.jar", options );
 			return;
 		}
