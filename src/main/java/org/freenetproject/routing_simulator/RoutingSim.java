@@ -88,6 +88,7 @@ public class RoutingSim {
 		options.addOption("q", "quiet", false, "No simulation output to stdout. Messages about arguments are still output.");
 		options.addOption("v", "verbose", false, "Progress updates.");
 		options.addOption("h", "help", false, "Display this message.");
+		options.addOption("v", "version", false, "Display software version.");
 		//TODO: Specify random seed
 
 		//Graphs: General generation options
@@ -128,6 +129,12 @@ public class RoutingSim {
 			formatter.printHelp( "java -jar simulator.jar", options );
 			return;
 		}
+
+		if (cmd.hasOption("version")) {
+			System.out.println("Freenet Routing Simulator v 0.0.1-dev");
+			return;
+		}
+
 		//Check that required arguments are specified and that combinations make sense.
 		if (cmd.hasOption("quiet") && cmd.hasOption("verbose")) {
 			System.out.println("Quiet with verbose does not make sense.");
