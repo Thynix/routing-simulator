@@ -470,8 +470,10 @@ distloop:
 		//System.out.println(hops + " HTL: At " + this.index);
 		list.add(this);
 		//Probabilistic decrement at HTL = 1. (Sort of. 20% chance of responding.)
-		if (hops == 0 && rand.nextDouble() < 0.2) return list;
-		else hops = 1;
+		if (hops == 0) {
+			if (rand.nextDouble() < 0.2) return list;
+			hops = 1;
+		}
 
 		SimpleNode next;
 		if (uniform) {
