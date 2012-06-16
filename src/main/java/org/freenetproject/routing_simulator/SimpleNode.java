@@ -469,7 +469,9 @@ distloop:
 		ArrayList<SimpleNode> list = new ArrayList<SimpleNode>();
 		//System.out.println(hops + " HTL: At " + this.index);
 		list.add(this);
-		if (hops == 0) return list;
+		//Probabilistic decrement at HTL = 1. (Sort of. 20% chance of responding.)
+		if (hops == 0 && rand.nextDouble() < 0.2) return list;
+		else hops = 1;
 
 		SimpleNode next;
 		if (uniform) {
@@ -515,7 +517,8 @@ distloop:
 	 * @return The final node of the walk
 	 */
 	public SimpleNode randomWalk(int hops, boolean uniform, Random rand) {
-		return randomWalkList(hops, uniform, rand).get(hops);
+		ArrayList<SimpleNode> trace = randomWalkList(hops, uniform, rand);
+		return trace.get(trace.size() - 1);
 	}
 
 	/**

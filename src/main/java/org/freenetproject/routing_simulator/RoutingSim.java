@@ -381,18 +381,11 @@ public class RoutingSim {
 		//Find distribution of nodes reached with random walk for increasing hops from all nodes.
 		//maxHops + 1 is because the starting node is at zero hops.
 		int[][] hopOccurrences = new int[maxHops + 1][g.size()];
-		ArrayList<SimpleNode> trace;
 		for (int nodeIndex = 0; nodeIndex < nTrials; nodeIndex++) {
 			SimpleNode source = g.getNode(rand.nextInt(g.size()));
-			SimpleNode alongTrace;
 			for (int walk = 0; walk < nProbes; walk++) {
-				trace = source.randomWalkList(maxHops, uniform, rand);
-				//Traces: starting point (zero hops), then maxHops hops from there.
-				assert trace.size() == maxHops + 1;
-				for (int fromEnd = 0; fromEnd <= maxHops; fromEnd++) {
-					//fromEnd of trace: hops along. 0 is starting node.
-					alongTrace = trace.get(fromEnd);
-					hopOccurrences[fromEnd][alongTrace.index]++;
+				for (int htl = 1; htl <= maxHops; htl++) {
+					hopOccurrences[htl][source.randomWalk(htl, uniform, rand).index]++;
 				}
 			}
 		}
