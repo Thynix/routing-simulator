@@ -467,13 +467,13 @@ distloop:
 	public ArrayList<SimpleNode> randomWalkList(int hops, boolean uniform, Random rand) {
 		if (hops < 0) throw new IllegalArgumentException("Must have positive hops.");
 		ArrayList<SimpleNode> list = new ArrayList<SimpleNode>();
-		//System.out.println(hops + " HTL: At " + this.index);
-		list.add(this);
 		//Probabilistic decrement at HTL = 1. (Sort of. 20% chance of responding.)
+		//HTL hit zero on the previous node; 20% chance of it being the end.
 		if (hops == 0) {
 			if (rand.nextDouble() < 0.2) return list;
 			hops = 1;
 		}
+		list.add(this);
 
 		SimpleNode next;
 		if (uniform) {
@@ -510,6 +510,15 @@ distloop:
 		return list;
 	}
 
+	public class ProbeResult {
+		public final int hopsTaken;
+		public final SimpleNode endpoint;
+		public ProbeResult(int hopsTaken, SimpleNode endpoint) {
+			this.hopsTaken = hopsTaken;
+			this.endpoint = endpoint;
+		}
+	}
+
 	/**
 	 * Get the final node of a random walk starting here.
 	 *
@@ -518,9 +527,9 @@ distloop:
 	 * @param rand Randomness source to use
 	 * @return The final node of the walk
 	 */
-	public SimpleNode randomWalk(int hops, boolean uniform, Random rand) {
+	public ProbeResult randomWalk(int hops, boolean uniform, Random rand) {
 		ArrayList<SimpleNode> trace = randomWalkList(hops, uniform, rand);
-		return trace.get(trace.size() - 1);
+		return new ProbeResult(trace.size(), trace.get(trace.size() - 1));
 	}
 
 	/**

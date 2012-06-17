@@ -381,13 +381,20 @@ public class RoutingSim {
 		//Find distribution of nodes reached with random walk for increasing hops from all nodes.
 		//maxHops + 1 is because the starting node is at zero hops.
 		int[][] hopOccurrences = new int[maxHops + 1][g.size()];
+		int[] hopsTaken = new int[maxHops + 1];
 		for (int nodeIndex = 0; nodeIndex < nTrials; nodeIndex++) {
 			SimpleNode source = g.getNode(rand.nextInt(g.size()));
 			for (int walk = 0; walk < nProbes; walk++) {
 				for (int htl = 1; htl <= maxHops; htl++) {
-					hopOccurrences[htl][source.randomWalk(htl, uniform, rand).index]++;
+					SimpleNode.ProbeResult result = source.randomWalk(htl, uniform, rand);
+					hopsTaken[htl] += result.hopsTaken;
+					hopOccurrences[htl][result.endpoint.index]++;
 				}
 			}
+		}
+
+		for (int htl = 1; htl <= maxHops; htl++) {
+			System.out.println("At HTL = " + htl + " average number of actual hops was " + ((double)hopsTaken[htl])/(nTrials * nProbes));
 		}
 
 		System.out.println("Sorting results.");
