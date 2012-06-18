@@ -110,6 +110,21 @@ public class Graph {
 
 	}
 
+	private static class DistanceEntry implements Comparable<DistanceEntry> {
+		public final double distance;
+		public final int index;
+
+		public DistanceEntry(double distance, int index) {
+			this.distance = distance;
+			this.index = index;
+		}
+
+		@Override
+		public int compareTo(DistanceEntry other) {
+			return Double.compare(this.distance, other.distance);
+		}
+	}
+
 	//TODO: Using GraphParam as an argument is beginning to smell: this takes additional arguments and ignores the number of close connections.
 	/**
 	 * Generates a graph with only long connections and a peer count distribution as described in the given file.
@@ -133,7 +148,7 @@ public class Graph {
 		final double rejectProbability = 0.98;
 		//TODO: Some way to get desired peer distributions cleanly? This is copy-paste from generate1dKleinbergGraph because it needs to drop out mid-loop.
 		//make far links
-		double[] distances = new double[param.n];
+		DistanceEntry[] distances = new DistanceEntry[param.n];
 		for (int i = 0; i < param.n; i++) {
 			WeightedDegreeNode src = (WeightedDegreeNode) g.nodes.get(i);
 			if (src.atDegree()) continue;
@@ -165,7 +180,7 @@ public class Graph {
 				//Find normalizing constant for this node
 				double norm = 0.0;
 				for (int j = 0; j < param.n; j++) {
-					distances[j] = Location.distance(src.getLocation(), g.nodes.get(j).getLocation());
+					distances[j] = new DistanceEntry(Location.distance(src.getLocation(), g.nodes.get(j).getLocation()), j);
 				}
 
 				//System.out.println("distances size is " + );
@@ -173,10 +188,11 @@ public class Graph {
 
 				//Make q distant connections
 				while (!src.atDegree()) {
-					int idx = Arrays.binarySearch(distances, linkLengthSource.getLinkLength(rand));
+					double length = linkLengthSource.getLinkLength(rand);
+					int idx = Arrays.binarySearch(distances, new DistanceEntry(length, -1));
 					if (idx < 0) idx = -1 - idx;
 					if (idx >= param.n) idx = param.n - 1;
-					dest = (WeightedDegreeNode)g.nodes.get(idx);
+					dest = (WeightedDegreeNode)g.nodes.get(distances[idx].index);
 					if (src == dest || src.isConnected(dest) ||
 					    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;
 					src.connect(dest);
