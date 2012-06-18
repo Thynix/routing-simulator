@@ -1,5 +1,6 @@
 package org.freenetproject.routing_simulator;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
@@ -12,6 +13,72 @@ import java.util.Random;
 public class Graph {
 	private ArrayList<SimpleNode> nodes;
 	private double[] locations;
+
+	public interface LinkLengthSource {
+		/**
+		 * @return a desired link length for a connection determined by the link length distribution scheme.
+		 * This will be attempted to be matched as closely as location distribution allows.
+		 */
+		public double getLinkLength(Random random);
+	}
+
+	/**
+	 * Generates link lengths with a probability proportional to 1/d. Ideal distribution.
+	 */
+	public static class KleinbergLinkSource implements LinkLengthSource {
+		//TODO: Uh. Proportional to 1/d... is this where the network size comes in? :/
+		public double KLEINBERG_PROPORTIONALITY = 0.1;
+		@Override
+		public double getLinkLength(Random random) {
+			//Exit when a link is accepted.
+			while (true) {
+				//Distances between locations can be a maximum of 0.5.
+				double distance = random.nextDouble() * 0.5;
+				if (random.nextDouble() < distance * KLEINBERG_PROPORTIONALITY) {
+					return distance;
+				}
+			}
+		}
+	}
+
+	/**
+	 * Generates link lengths with uniform / flat probability. Terrible distribution.
+	 */
+	public static class UniformLinkSource implements LinkLengthSource {
+		@Override
+		public double getLinkLength(Random random) {
+			return random.nextDouble() * 0.5;
+		}
+	}
+
+	public static class ConformingLinkSource implements LinkLengthSource {
+		private final ArrayList<Double> lengths;
+		public ConformingLinkSource(String filename) {
+			lengths = new ArrayList<Double>();
+			try {
+				BufferedReader reader = new BufferedReader(new FileReader(new File(filename)));
+				//TODO: Read all, put into ArrayList, get a link length selects from that.
+				String line;
+				//TODO: This seems like a C++ way of doing things. What's the Java way?
+				while ( (line = reader.readLine()) != null) {
+					//File format has link length as first value, separated by a space.
+					lengths.add(Double.valueOf(line.split(" ")[0]));
+				}
+			} catch (FileNotFoundException e) {
+				System.out.println(e);
+				System.out.println("Unable to open file \"" + filename + "\".");
+				System.exit(1);
+			} catch (IOException e) {
+				System.out.println(e);
+				System.exit(2);
+			}
+		}
+
+		@Override
+		public double getLinkLength(Random random) {
+			return lengths.get(random.nextInt(lengths.size()));
+		}
+	}
 
 	/**
 	 * Private constructor; call one of the generator functions instead.
@@ -52,7 +119,7 @@ public class Graph {
 	 * @param forceSize If true, the size in param is used. If not, the sum of occurrences in the distribution file.
 	 * @return specified graph
 	 */
-	public static Graph generatePeerDistGraph(GraphParam param, Random rand, String filename, boolean forceSize) {
+	public static Graph generatePeerDistGraph(GraphParam param, Random rand, String filename, boolean forceSize, LinkLengthSource linkLengthSource) {
 		WeightedDistribution distribution = new WeightedDistribution(filename, new Random(rand.nextLong()));
 		param = new GraphParam(forceSize ? param.n : distribution.totalOccurances, param.p, param.q, param.pLowUptime, param.pInstantReject, param.evenSpacing, param.fastGeneration);
 		Graph g = new Graph(param.n);
@@ -66,7 +133,7 @@ public class Graph {
 		final double rejectProbability = 0.98;
 		//TODO: Some way to get desired peer distributions cleanly? This is copy-paste from generate1dKleinbergGraph because it needs to drop out mid-loop.
 		//make far links
-		double[] sumProb = new double[param.n];
+		double[] distances = new double[param.n];
 		for (int i = 0; i < param.n; i++) {
 			WeightedDegreeNode src = (WeightedDegreeNode) g.nodes.get(i);
 			if (src.atDegree()) continue;
@@ -98,18 +165,17 @@ public class Graph {
 				//Find normalizing constant for this node
 				double norm = 0.0;
 				for (int j = 0; j < param.n; j++) {
-					if (i != j) {
-						norm += 1.0 / Location.distance(src.getLocation(), g.nodes.get(j).getLocation());
-					}
-					sumProb[j] = norm;
-					if (j > 0) assert sumProb[j] >= sumProb[j-1];
+					distances[j] = Location.distance(src.getLocation(), g.nodes.get(j).getLocation());
 				}
+
+				//System.out.println("distances size is " + );
+				Arrays.sort(distances);
 
 				//Make q distant connections
 				while (!src.atDegree()) {
-					double x = rand.nextDouble() * norm;
-					int idx = Arrays.binarySearch(sumProb, x);
+					int idx = Arrays.binarySearch(distances, linkLengthSource.getLinkLength(rand));
 					if (idx < 0) idx = -1 - idx;
+					if (idx >= param.n) idx = param.n - 1;
 					dest = (WeightedDegreeNode)g.nodes.get(idx);
 					if (src == dest || src.isConnected(dest) ||
 					    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;

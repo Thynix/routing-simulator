@@ -69,6 +69,15 @@ public class RoutingSim {
 		}
 	}
 
+	private static boolean readableFile(String path) {
+		File file = new File(path);
+		if (!file.exists() || !file.canRead() || !file.isFile()) {
+			System.out.println("Cannot read \"" + file.getAbsolutePath() + "\" as a file.");
+			return false;
+		}
+		return true;
+	}
+
 	/**
 	 * Main simulator program.  Generate a set of graphs of different
 	 * parameters, run a set of requests on them, and print assorted
@@ -108,6 +117,7 @@ public class RoutingSim {
 		//Graphs: From degree distribution
 		options.addOption("d", "degree", true, "Use a graph following a given degree distribution. Takes a path to a degree distribution file of the format \"[degree] [number of occurrences]\\n\"");
 		options.addOption("F", "force-size", false, "When using --degree force generation of --size nodes. May cause severe distortion.");
+		options.addOption(null, "link", true, "Use a graph following a given link length distribution. Takes a path to a link distribution file containing a file for the format \"[link length] [arbitrary]\n");
 
 		//Simulations: Routing policies
 		//TODO: But what do the various numbers actually mean?
@@ -170,13 +180,8 @@ public class RoutingSim {
 
 		//Check for problems with specified paths.
 		//Check if input files can be read.
-		if (cmd.hasOption("degree")) {
-			File file = new File(cmd.getOptionValue("degree"));
-			if (!file.exists() || !file.canRead() || !file.isFile()) {
-				System.out.println("Cannot read \"" + file.getAbsolutePath() + "\" as a file.");
-				return;
-			}
-		}
+		if (cmd.hasOption("degree") && ! readableFile(cmd.getOptionValue("degree"))) return;
+		if (cmd.hasOption("link") && ! readableFile(cmd.getOptionValue("link"))) return;
 
 		//Check if output paths are directories that can be written to, and create them if they do not exist.
 		if (cmd.hasOption("output-probe") && !writableDirectory(cmd.getOptionValue("output-probe"))) return;
@@ -237,7 +242,7 @@ public class RoutingSim {
 
 				Graph g;
 				if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
-				else /*if (graphType == GraphGenerator.DEGREE)*/ g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"), cmd.hasOption("force-size"));
+				else /*if (graphType == GraphGenerator.DEGREE)*/ g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"), cmd.hasOption("force-size"), new Graph.ConformingLinkSource(cmd.getOptionValue("link")));
 
 				if (!quiet) g.printGraphStats(verbose);
 				if (verbose) {
@@ -284,7 +289,7 @@ public class RoutingSim {
 					}
 				}
 
-				if (cmd.hasOption("probe")) {
+				/*if (cmd.hasOption("probe")) {
 					rand = new MersenneTwister(seed);
 					//Uniform probes if --metropolis-hastings is not specified.
 					probeDistribution(g, rand, maxHops, quiet, verbose, cmd.getOptionValue("output-probe"), !cmd.hasOption("metropolis-hastings"));
@@ -293,7 +298,7 @@ public class RoutingSim {
 				if (cmd.hasOption("route")) {
 					rand = new MersenneTwister(seed);
 					simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose);
-				}
+				}*/
 				if (verbose) System.out.println();
 			if (!quiet) {
 				System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
