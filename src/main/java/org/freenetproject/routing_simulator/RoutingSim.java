@@ -242,7 +242,11 @@ public class RoutingSim {
 
 				Graph g;
 				if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
-				else /*if (graphType == GraphGenerator.DEGREE)*/ g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"), cmd.hasOption("force-size"), new Graph.ConformingLinkSource(cmd.getOptionValue("link")));
+				else /*if (graphType == GraphGenerator.DEGREE)*/ {
+					Graph.LinkLengthSource source;
+					if (cmd.hasOption("link")) source = new Graph.ConformingLinkSource(cmd.getOptionValue("link"));
+					else source = new Graph.UniformLinkSource();
+					g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"), cmd.hasOption("force-size"), source);
 
 				if (!quiet) g.printGraphStats(verbose);
 				if (verbose) {
