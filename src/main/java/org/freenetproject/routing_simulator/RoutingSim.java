@@ -6,6 +6,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -121,10 +122,11 @@ public class RoutingSim {
 
 		//Simulations: Routing policies
 		//TODO: But what do the various numbers actually mean?
-		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --instant-reject, --low-uptime, --requests, and --intersect-tests be specified.");
+		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --instant-reject, --low-uptime, --requests, --output-route, and --intersect-tests be specified.");
 		//TODO: Explain more on these - what are their effects?
 		options.addOption("q", "requests", true, "Number of requests to run.");
 		options.addOption("n", "intersect-tests", true, "Number of intersect tests per request: same target but random origin.");
+		options.addOption("o", "output-route", true, "File to which routing information is output.");
 
 		//Simulations: Probe distribution
 		options.addOption("p", "probe", true, "Simulate running probes from random locations for the specified number of maximum hops. Requires that --output-probe be specified.");
@@ -169,7 +171,7 @@ public class RoutingSim {
 			System.out.println("--degree and --force-size were specified but not --size.");
 			return;
 		}
-		if (cmd.hasOption("route") && (!cmd.hasOption("requests") || !cmd.hasOption("intersect-tests") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime"))) {
+		if (cmd.hasOption("route") && (!cmd.hasOption("requests") || !cmd.hasOption("intersect-tests") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime") || !cmd.hasOption("output-route"))) {
 			System.out.println("--route was specified, but not one or more of its required parameters: --requests, --intersect-tests, --instant-reject, --low-uptime.");
 			return;
 		}
@@ -293,7 +295,7 @@ public class RoutingSim {
 					}
 				}
 
-				/*if (cmd.hasOption("probe")) {
+				if (cmd.hasOption("probe")) {
 					rand = new MersenneTwister(seed);
 					//Uniform probes if --metropolis-hastings is not specified.
 					probeDistribution(g, rand, maxHops, quiet, verbose, cmd.getOptionValue("output-probe"), !cmd.hasOption("metropolis-hastings"));
@@ -301,8 +303,8 @@ public class RoutingSim {
 
 				if (cmd.hasOption("route")) {
 					rand = new MersenneTwister(seed);
-					simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose);
-				}*/
+					simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose, cmd.getOptionValue("output-route"));
+				}
 				if (verbose) System.out.println();
 			if (!quiet) {
 				System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
@@ -415,8 +417,16 @@ public class RoutingSim {
 	}
 
 	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
-			int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI) {
-		System.out.println("Routing " + nRequests * nIntersectTests + " requests, policy " + routePolicy + " on network of size " + g.size() + ".");
+			int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, final String outputPath) {
+		File outputFile = new File(outputPath);
+		PrintStream stream = null;
+		try {
+			stream = new PrintStream(outputFile);
+		} catch (IOException e) {
+			System.err.println("Cannot open file \"" + outputPath + ": " + e);
+			System.exit(1);
+		}
+		stream.println("Routing " + nRequests * nIntersectTests + " requests, policy " + routePolicy + " on network of size " + g.size() + ".");
 		long startTime = System.currentTimeMillis();
 
 		//TODO: This is only used in 2D capacity in one line: can make 1D?
@@ -455,7 +465,7 @@ public class RoutingSim {
 				if (g.preciseRoute(requests[i][j])) nPreciseRouted++;
 			}
 		}
-		System.out.println("Requests precisely routed: " + nPreciseRouted);
+		stream.println("Requests precisely routed: " + nPreciseRouted);
 		//assert nPreciseRouted == nRequests * nIntersectTests;
 
 		//TODO: What is a sink policy? Is "pol" policy?
@@ -507,15 +517,15 @@ public class RoutingSim {
 			meanHighUptimeSinkCount /= nRequests * nIntersectTests;
 
 			//TODO: Would these be more readable as actual histogram plots?
-			System.out.println("Sink count histograms for policy " + sinkPolicy + ":");
-			System.out.println("n\tTotal\tlowU\thighU");
+			stream.println("Sink count histograms for policy " + sinkPolicy + ":");
+			stream.println("n\tTotal\tlowU\thighU");
 			for (int i = 0; i < sinkHistSize; i++) {
-				System.out.println(i + "\t" + sinkHist[i] + "\t" + lowUptimeSinkHist[i] + "\t" + highUptimeSinkHist[i]);
+				stream.println(i + "\t" + sinkHist[i] + "\t" + lowUptimeSinkHist[i] + "\t" + highUptimeSinkHist[i]);
 			}
-			System.out.println("Mean sinks: " + meanSinkCount);
-			System.out.println("Mean low uptime sinks: " + meanLowUptimeSinkCount);
-			System.out.println("Mean high uptime sinks: " + meanHighUptimeSinkCount);
-			System.out.println();
+			stream.println("Mean sinks: " + meanSinkCount);
+			stream.println("Mean low uptime sinks: " + meanLowUptimeSinkCount);
+			stream.println("Mean high uptime sinks: " + meanHighUptimeSinkCount);
+			stream.println();
 		}
 
 		//TODO: What does decrement mean? TODO: This is 2D (requests) to 1D (decrements)... 1D requests would be cleaner here.
@@ -529,8 +539,8 @@ public class RoutingSim {
 		}
 		//TODO: Why not have the printArraySummary() sort it?
 		Arrays.sort(decrements);
-		System.out.println("HTL Decrements:");
-		System.out.print(printArraySummary(decrements, true));
+		stream.println("HTL Decrements:");
+		stream.print(printArraySummary(decrements, true));
 
 		//TODO: What is 19 for? The length is used for comparison with number of hops?
 		double[] logDistance = new double[19];
@@ -558,8 +568,8 @@ public class RoutingSim {
 			}
 		}
 
-		System.out.println("Routing distance by " + (byDecrements ? "decrements:" : "HTL:"));
-		System.out.println((byDecrements ? "Dec" : "HTL") + "\tCount\tLogDist");
+		stream.println("Routing distance by " + (byDecrements ? "decrements:" : "HTL:"));
+		stream.println((byDecrements ? "Dec" : "HTL") + "\tCount\tLogDist");
 		for (int i = 0; i < logDistance.length; i++) {
 			double meanLogDist = logDistance[i];
 			if (logDistCount[i] > 0) {
@@ -567,9 +577,9 @@ public class RoutingSim {
 			} else {
 				assert meanLogDist == 0.0;
 			}
-			System.out.println(i + "\t" + logDistCount[i] + "\t" + meanLogDist);
+			stream.println(i + "\t" + logDistCount[i] + "\t" + meanLogDist);
 		}
-		System.out.println();
+		stream.println();
 
 		//
 		int[] maxHopsToIntersect = null;
@@ -605,32 +615,32 @@ public class RoutingSim {
 				*/
 			}
 			Arrays.sort(maxHopsToIntersect);
-			System.out.println("Max hops to intersection:");
-			System.out.print(printArraySummary(maxHopsToIntersect, true));
+			stream.println("Max hops to intersection:");
+			stream.print(printArraySummary(maxHopsToIntersect, true));
 			if (printPairedMaxHTI) {
 				Arrays.sort(pairedMaxHTI);
-				System.out.println("Paired max hops to intersection:");
-				System.out.print(printArraySummary(pairedMaxHTI, true));
+				stream.println("Paired max hops to intersection:");
+				stream.print(printArraySummary(pairedMaxHTI, true));
 			}
-			System.out.println();
+			stream.println();
 			for (int s = 0; s < sinkPolsUsed.length; s++) {
-				System.out.println("Max hops to sink, policy " + sinkPolsUsed[s] + ":");
+				stream.println("Max hops to sink, policy " + sinkPolsUsed[s] + ":");
 				Arrays.sort(hopsToSink[s]);
-				System.out.print(printArraySummary(hopsToSink[s], true));
-				System.out.println();
+				stream.print(printArraySummary(hopsToSink[s], true));
+				stream.println();
 			}
 		}
-		System.out.println("Time taken (ms): " + (System.currentTimeMillis() - startTime));
-		System.out.print("Summary:\t" + g.size() + "\t" + g.nEdges() + "\t" + g.minDegree() + "\t");
-		System.out.print(g.maxDegree() + "\t" + Math.sqrt(g.degreeVariance()) + "\t" + g.meanLocalClusterCoeff() + "\t");
-		System.out.print(g.globalClusterCoeff() + "\t" + nRequests * nIntersectTests + "\t" + nPreciseRouted + "\t");
-		System.out.print(printArraySummary(decrements, false));
+		stream.println("Time taken (ms): " + (System.currentTimeMillis() - startTime));
+		stream.print("Summary:\t" + g.size() + "\t" + g.nEdges() + "\t" + g.minDegree() + "\t");
+		stream.print(g.maxDegree() + "\t" + Math.sqrt(g.degreeVariance()) + "\t" + g.meanLocalClusterCoeff() + "\t");
+		stream.print(g.globalClusterCoeff() + "\t" + nRequests * nIntersectTests + "\t" + nPreciseRouted + "\t");
+		stream.print(printArraySummary(decrements, false));
 		if (nIntersectTests > 1) {
 			System.out.print(printArraySummary(maxHopsToIntersect, false));
 		}
-		System.out.println();
-		System.out.println();
-		System.out.println();
+		stream.println();
+		stream.println();
+		stream.println();
 	}
 
 	/**
