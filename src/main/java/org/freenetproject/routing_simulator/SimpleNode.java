@@ -1,6 +1,7 @@
 package org.freenetproject.routing_simulator;
 
 import java.util.ArrayList;
+import java.util.ListIterator;
 import java.util.Random;
 
 /**
@@ -21,6 +22,8 @@ public class SimpleNode {
 	/**Index of this node in the graph; purely for convenience, not used in any decision making.*/
 	public int index;
 
+	private final LRUQueue<SimpleNode> lruQueue;
+
 	/**
 	 * Public constructor.
 	 *
@@ -40,6 +43,7 @@ public class SimpleNode {
 		this.pInstantReject = pInstantReject;
 		this.rand = rand;
 		index = -1;
+		lruQueue = new LRUQueue<SimpleNode>();
 	}
 
 	/**
@@ -207,13 +211,63 @@ distloop:
 	public static final int RESULT_INSTANT_REJECT = 2;
 
 	/**
+	 * Called to offer a connection between the specified peer and this one during path folding.
+	 * The lowest peer in the LRU queue is dropped to make room. TODO: More complex modelling of when to drop.
+	 * @param peer peer to consider a connection to.
+	 * @return whether the offered connection was accepted.
+	 */
+	public boolean offerPathFold(final SimpleNode peer) {
+		disconnect(lruQueue.pop());
+		// Peers added via path folding are added to the end.
+		lruQueue.pushLeast(peer);
+		connect(peer);
+		return true;
+	}
+
+	/**
+	 * Indicates a successful fetch: starting with the last node on the chain, nodes successively offers previous
+	 * nodes a connection. If the connection is accepted the process starts again from the node previous to the
+	 * accepting node.
+	 * @param nodeChain Nodes which make up the path the request has followed. First element is the origin of the
+	 *                  request; last is the endpoint.
+	 */
+	private static void success(final ArrayList<SimpleNode> nodeChain) {
+		final ListIterator<SimpleNode> iterator = nodeChain.listIterator();
+
+		SimpleNode foldingFrom;
+		if (iterator.hasPrevious()) foldingFrom = iterator.previous();
+		else return;
+
+		//Start from the last node.
+		while (iterator.hasPrevious()) {
+			//If the path fold is accepted, the one before the accepting one starts another fold.
+			if (iterator.previous().offerPathFold(foldingFrom) && iterator.hasPrevious()) {
+				foldingFrom = iterator.previous();
+			}
+		}
+	}
+
+	/**
 	 * Route a request.  Routing policy is chosen by
 	 * <code>r.routePolicy</code>.
 	 *
 	 * @param r The request to route
+	 * @param origin the previous node in the chain.
 	 * @return Code indicating result
 	 */
-	public int route(Request r, SimpleNode origin) {
+	public int route(final Request r, final SimpleNode origin) {
+		return route(r, origin, new ArrayList<SimpleNode>());
+	}
+
+	/**
+	 * Route a request.  Routing policy is chosen by
+	 * <code>r.routePolicy</code>.
+	 *
+	 * @param r The request to route
+	 * @param origin the previous node in the chain.
+	 * @return Code indicating result
+	 */
+	public int route(final Request r, final SimpleNode origin, final ArrayList<SimpleNode> previousNodes) {
 		assert r.getHTL() <= Request.MAX_HTL;
 		assert r.getHTL() > 0;
 		assert !isLoop(r);
@@ -227,6 +281,7 @@ distloop:
 		if (r.getHTL() == 0) {
 			//ran out of HTL; successfully routed.
 			//r.sink(this, isSink(r, routable, origin, destNode));
+			success(previousNodes);
 			return RESULT_SUCCESS;
 		}
 
@@ -267,6 +322,7 @@ distloop:
 
 			int routeResult = destNode.route(r, this);
 			if (routeResult == RESULT_SUCCESS) {
+				success(previousNodes);
 				return RESULT_SUCCESS;
 			} else if (routeResult == RESULT_RNF || routeResult == RESULT_INSTANT_REJECT) {
 				routable[dest] = false;
@@ -276,6 +332,7 @@ distloop:
 
 			if (r.getHTL() == 0) {
 				//ran out of HTL while routing here or downstream (ie downstream RNF)
+				success(previousNodes);
 				return RESULT_SUCCESS;
 			}
 		}
@@ -406,6 +463,25 @@ distloop:
 
 		connections.add(other);
 		other.connections.add(this);
+		lruQueue.push(other);
+		other.lruQueue.push(other);
+	}
+
+	/**
+	 * Disconnect from a node which is already connected to this one. As connections are
+	 * undirected, the other node also disconnects.
+	 * @param other node to disconnect from.
+	 */
+	public void disconnect(SimpleNode other) {
+		if (other == this)
+			throw new IllegalArgumentException();
+		if (!connections.contains(other) || !other.connections.contains(this))
+			throw new IllegalArgumentException();
+
+		connections.remove(other);
+		other.connections.remove(this);
+		lruQueue.remove(other);
+		other.lruQueue.remove(other);
 	}
 
 	/**

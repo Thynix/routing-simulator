@@ -262,38 +262,6 @@ public class RoutingSim {
 					avgStats[0][i][0] = indivStats[i];
 				}
 
-				if (cmd.hasOption("output-degree")) {
-					int[] degrees = new int[g.maxDegree() + 1];
-					for (int degree : g.degrees()) {
-						degrees[degree]++;
-					}
-					for (int i = 0; i < g.maxDegree(); i++) {
-						try {
-							degreeOutput.write((i + " " + degrees[i] + "\n").getBytes());
-						} catch (IOException e) {
-							System.out.println("Unexpected error encoding string for degree output:");
-							System.out.println(e);
-							e.printStackTrace();
-							return;
-						}
-					}
-				}
-
-				if (cmd.hasOption("output-link")) {
-					double[] lengths = g.edgeLengths();
-					//Output is intended for gnuplot CDF - second value is Y and should sum to 1.
-					double normalized = 1.0/lengths.length;
-					for (double length : lengths) {
-						try {
-							linkOutput.write((length + " " + normalized + "\n").getBytes());
-						} catch (IOException e) {
-							System.out.println("Unexpected error encoding string for link length output:");
-							System.out.println(e);
-							e.printStackTrace();
-							return;
-						}
-					}
-				}
 
 				if (cmd.hasOption("probe")) {
 					rand = new MersenneTwister(seed);
@@ -305,6 +273,40 @@ public class RoutingSim {
 					rand = new MersenneTwister(seed);
 					simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose, cmd.getOptionValue("output-route"));
 				}
+
+		if (cmd.hasOption("output-degree")) {
+			int[] degrees = new int[g.maxDegree() + 1];
+			for (int degree : g.degrees()) {
+				degrees[degree]++;
+			}
+			for (int i = 0; i < g.maxDegree(); i++) {
+				try {
+					degreeOutput.write((i + " " + degrees[i] + "\n").getBytes());
+				} catch (IOException e) {
+					System.out.println("Unexpected error encoding string for degree output:");
+					System.out.println(e);
+					e.printStackTrace();
+					return;
+				}
+			}
+		}
+
+		if (cmd.hasOption("output-link")) {
+			double[] lengths = g.edgeLengths();
+			//Output is intended for gnuplot CDF - second value is Y and should sum to 1.
+			double normalized = 1.0/lengths.length;
+			for (double length : lengths) {
+				try {
+					linkOutput.write((length + " " + normalized + "\n").getBytes());
+				} catch (IOException e) {
+					System.out.println("Unexpected error encoding string for link length output:");
+					System.out.println(e);
+					e.printStackTrace();
+					return;
+				}
+			}
+		}
+
 				if (verbose) System.out.println();
 			if (!quiet) {
 				System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
