@@ -393,9 +393,10 @@ public class Graph {
 	/**
 	 * Constructs the graph from a file.
 	 * @param source file to read the graph from.
+	 * @param random Randomness source to give to nodes.
 	 * @return graph defined by the file.
 	 */
-	public static Graph read(File source) {
+	public static Graph read(File source, Random random) {
 		try {
 			final FileInputStream inputStream = new FileInputStream(source);
 			final ObjectInputStream input = new ObjectInputStream(inputStream);
@@ -408,6 +409,7 @@ public class Graph {
 			// Nodes.
 			for (int i = 0; i < networkSize; i++) {
 				SimpleNode node = (SimpleNode)input.readObject();
+				node.setRand(random);
 				node.index = i;
 				graph.locations[i] = node.getLocation();
 				graph.nodes.add(node);

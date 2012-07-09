@@ -28,6 +28,9 @@ public class SimpleNode implements Serializable {
 
 	private LRUQueue<SimpleNode> lruQueue;
 
+	//Not in routeTo in order to reduce GC thrash
+	double[] ignoreLoc = new double[1];
+
 	private void writeObject(ObjectOutputStream out) throws IOException {
 		out.writeDouble(location);
 		out.writeInt(index);
@@ -43,6 +46,11 @@ public class SimpleNode implements Serializable {
 		lowUptime = in.readBoolean();
 		pInstantReject = in.readDouble();
 		lruQueue = new LRUQueue<SimpleNode>();
+		ignoreLoc = new double[1];
+	}
+
+	public void setRand(Random rand) {
+		this.rand = rand;
 	}
 
 	/**
@@ -356,9 +364,6 @@ distloop:
 			}
 		}
 	}
-
-	//Not in routeTo in order to reduce GC thrash
-	double[] ignoreLoc = new double[1];
 
 	/**
 	 * Get the node that the request will be routed to.

@@ -276,7 +276,7 @@ public class RoutingSim {
 
 		Graph g;
 		if (cmd.hasOption("load-graph")) {
-			g = Graph.read(new File(cmd.getOptionValue("load-graph")));
+			g = Graph.read(new File(cmd.getOptionValue("load-graph")), rand);
 		}
 		else if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
 		else /*if (graphType == GraphGenerator.DEGREE)*/ {
