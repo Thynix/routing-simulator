@@ -1,12 +1,16 @@
 package org.freenetproject.routing_simulator;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Random;
 
 /**
  * A simple node model.  Has a location and a set of connections.
  */
-public class SimpleNode {
+public class SimpleNode implements Serializable {
 	public static final int ROUTE_SUCCESS = 0;
 	public static final int ROUTE_RNF = 1;
 
@@ -20,6 +24,23 @@ public class SimpleNode {
 
 	/**Index of this node in the graph; purely for convenience, not used in any decision making.*/
 	public int index;
+
+	private void writeObject(ObjectOutputStream out) throws IOException {
+		out.writeDouble(location);
+		out.writeInt(index);
+		out.writeBoolean(lowUptime);
+		out.writeDouble(pInstantReject);
+	}
+
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+		location = in.readDouble();
+		//Connections must be initialized later from the network view where other nodes are visible.
+		connections = new ArrayList<SimpleNode>();
+		index = in.readInt();
+		lowUptime = in.readBoolean();
+		pInstantReject = in.readDouble();
+	}
+
 
 	/**
 	 * Public constructor.
@@ -401,6 +422,7 @@ distloop:
 	public void connect(SimpleNode other) {
 		if (other == this)
 			throw new IllegalArgumentException();
+		assert other != null;
 		if (connections.contains(other) || other.connections.contains(this))
 			throw new IllegalArgumentException();
 

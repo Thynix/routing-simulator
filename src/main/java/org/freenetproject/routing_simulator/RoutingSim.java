@@ -107,6 +107,8 @@ public class RoutingSim {
 		//TODO: Does it make sense to use fastGeneration without evenSpacing? Assuming it doesn't.
 		options.addOption("f", "fast-generation", false, "If present, the simulator will assign locations as per --evenspacing and take shortcuts to speed up graph generation.");
 		options.addOption("e", "even-spacing", false, "If present, the simulator will space nodes evenly throughout locations.");
+		options.addOption("G", "load-graph", true, "Path to load a saved graph from.");
+		options.addOption("g", "save-graph", true, "Path to save a graph after simulation is run on it.");
 
 		//Graphs: 1D Kleinberg
 		options.addOption("i", "ideal", false, "Use an ideal 1D Kleinberg graph. Requires that --size, --local, --remote, --instant-reject, and --low-uptime be specified.");
@@ -152,14 +154,20 @@ public class RoutingSim {
 			System.out.println("Quiet with verbose does not make sense.");
 			return;
 		}
-		if (cmd.hasOption("quiet") && !((cmd.hasOption("probe") && cmd.hasOption("output-probe")) || cmd.hasOption("output-degree") || cmd.hasOption("output-link"))) {
+		if (cmd.hasOption("quiet") && !((cmd.hasOption("probe") && cmd.hasOption("output-probe")) || cmd.hasOption("output-degree") || cmd.hasOption("output-link") || cmd.hasOption("save-graph"))) {
 			System.out.println("Simulation will produce no output: --quiet is specified, but not any option which outputs to a file.");
 		}
-		if (cmd.hasOption("ideal") && cmd.hasOption("degree")) {
+
+		int generators = 0;
+		for (String option : new String[] { "ideal", "degree", "load-graph" }) {
+			if (cmd.hasOption(option)) generators++;
+		}
+
+		if (generators > 1) {
 			System.out.println("Graph cannot be generated with multiple methods at once.");
 			return;
 		}
-		if (!cmd.hasOption("ideal") && !cmd.hasOption("degree")) {
+		if (generators == 0) {
 			System.out.println("No graph generation method specified.");
 			return;
 		}
@@ -184,15 +192,34 @@ public class RoutingSim {
 		//Check if input files can be read.
 		if (cmd.hasOption("degree") && ! readableFile(cmd.getOptionValue("degree"))) return;
 		if (cmd.hasOption("link") && ! readableFile(cmd.getOptionValue("link"))) return;
+		if (cmd.hasOption("load-graph") && !readableFile(cmd.getOptionValue("load-graph"))) return;
 
 		//Check if output paths are directories that can be written to, and create them if they do not exist.
 		if (cmd.hasOption("output-probe") && !writableDirectory(cmd.getOptionValue("output-probe"))) return;
 
 		//Check that output files exist and are writable or can be created.
 		FileOutputStream degreeOutput = null, linkOutput = null;
+		final File graphOutput;
 		if (cmd.hasOption("output-degree") && (degreeOutput = writableFile(cmd.getOptionValue("output-degree"))) == null ) return;
 		if (cmd.hasOption("output-link") && (linkOutput = writableFile(cmd.getOptionValue("output-link"))) == null) return;
-
+		if (cmd.hasOption("save-graph")) {
+			graphOutput = new File(cmd.getOptionValue("save-graph"));
+			//Just check for this one; saving takes a File. Better to check here than after simulation runs.
+			try {
+				FileOutputStream outputStream = new FileOutputStream(graphOutput);
+				outputStream.close();
+			} catch (FileNotFoundException e) {
+				System.err.println("Could not open saved graph:");
+				e.printStackTrace();
+				System.exit(7);
+			} catch (IOException e) {
+				System.err.println("Unexpected IOException:");
+				e.printStackTrace();
+				System.exit(8);
+			}
+		} else {
+			graphOutput = null;
+		}
 
 		final GraphGenerator graphType;
 		if (cmd.hasOption("ideal")) graphType = GraphGenerator.IDEAL;
@@ -243,12 +270,16 @@ public class RoutingSim {
 				}
 
 				Graph g;
-				if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
+		if (cmd.hasOption("load-graph")) {
+			g = Graph.read(new File(cmd.getOptionValue("load-graph")));
+		}
+				else if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
 				else /*if (graphType == GraphGenerator.DEGREE)*/ {
 					Graph.LinkLengthSource source;
 					if (cmd.hasOption("link")) source = new Graph.ConformingLinkSource(cmd.getOptionValue("link"));
 					else source = new Graph.UniformLinkSource();
 					g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"), cmd.hasOption("force-size"), source);
+				}
 
 				if (!quiet) g.printGraphStats(verbose);
 				if (verbose) {
@@ -294,6 +325,8 @@ public class RoutingSim {
 						}
 					}
 				}
+
+		if (cmd.hasOption("save-graph")) g.write(graphOutput);
 
 				if (cmd.hasOption("probe")) {
 					rand = new MersenneTwister(seed);
