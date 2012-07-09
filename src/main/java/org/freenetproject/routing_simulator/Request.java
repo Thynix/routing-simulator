@@ -43,7 +43,7 @@ public class Request {
 	/**
 	 * The policy that will be used to route this request.
 	 * 
-	 * @see SimpleNode.route
+	 * @see SimpleNode route
 	 */
 	public int routePolicy;
 
