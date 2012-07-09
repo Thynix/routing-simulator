@@ -185,7 +185,7 @@ public class RoutingSim {
 			return;
 		}
 		if (cmd.hasOption("route") && (!cmd.hasOption("requests") || !cmd.hasOption("intersect-tests") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime") || !cmd.hasOption("output-route"))) {
-			System.out.println("--route was specified, but not one or more of its required parameters: --requests, --intersect-tests, --instant-reject, --low-uptime.");
+			System.out.println("--route was specified, but not one or more of its required parameters: --requests, --intersect-tests, --instant-reject, --low-uptime, --output-route.");
 			return;
 		}
 		if (cmd.hasOption("probe") && !cmd.hasOption("output-probe")) {
