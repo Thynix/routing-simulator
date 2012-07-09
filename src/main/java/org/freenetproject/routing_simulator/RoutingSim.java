@@ -257,60 +257,60 @@ public class RoutingSim {
 			System.out.println();
 		}
 
-				rand = new MersenneTwister(seed);
-				GraphParam gp = new GraphParam(
-					cmd.hasOption("size") ? Integer.valueOf(cmd.getOptionValue("size")) : 2,
-					cmd.hasOption("local") ? Integer.valueOf(cmd.getOptionValue("local")) : 0,
-					cmd.hasOption("remote") ? Integer.valueOf(cmd.getOptionValue("remote")) : 0,
-					cmd.hasOption("low-uptime") ? Double.valueOf(cmd.getOptionValue("low-uptime")) : 0,
-					cmd.hasOption("instant-reject") ? Double.valueOf(cmd.getOptionValue("instant-reject")) : 0,
-					cmd.hasOption("evenspacing") || cmd.hasOption("fast-generation"),
-					cmd.hasOption("fast-generation"));
+		rand = new MersenneTwister(seed);
+		GraphParam gp = new GraphParam(
+			cmd.hasOption("size") ? Integer.valueOf(cmd.getOptionValue("size")) : 2,
+			cmd.hasOption("local") ? Integer.valueOf(cmd.getOptionValue("local")) : 0,
+			cmd.hasOption("remote") ? Integer.valueOf(cmd.getOptionValue("remote")) : 0,
+			cmd.hasOption("low-uptime") ? Double.valueOf(cmd.getOptionValue("low-uptime")) : 0,
+			cmd.hasOption("instant-reject") ? Double.valueOf(cmd.getOptionValue("instant-reject")) : 0,
+			cmd.hasOption("evenspacing") || cmd.hasOption("fast-generation"),
+			cmd.hasOption("fast-generation"));
 
-				if (verbose) {
-					System.out.print("Generating " + graphType.name() + " graph of " + gp.n + " nodes, with ");
-					System.out.println("parameters p = " + gp.p + ", q = " + gp.q + ".");
-					System.out.print("pLowUptime = " + gp.pLowUptime + ", pInstantReject = " + gp.pInstantReject);
-					System.out.println(", evenSpacing = " + gp.evenSpacing + ", fastGeneration = " + gp.fastGeneration);
-				}
+		if (verbose) {
+			System.out.print("Generating " + graphType.name() + " graph of " + gp.n + " nodes, with ");
+			System.out.println("parameters p = " + gp.p + ", q = " + gp.q + ".");
+			System.out.print("pLowUptime = " + gp.pLowUptime + ", pInstantReject = " + gp.pInstantReject);
+			System.out.println(", evenSpacing = " + gp.evenSpacing + ", fastGeneration = " + gp.fastGeneration);
+		}
 
-				Graph g;
+		Graph g;
 		if (cmd.hasOption("load-graph")) {
 			g = Graph.read(new File(cmd.getOptionValue("load-graph")));
 		}
-				else if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
-				else /*if (graphType == GraphGenerator.DEGREE)*/ {
-					Graph.LinkLengthSource source;
-					if (cmd.hasOption("link")) source = new Graph.ConformingLinkSource(cmd.getOptionValue("link"));
-					else source = new Graph.UniformLinkSource();
-					g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"), cmd.hasOption("force-size"), source);
-				}
+		else if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
+		else /*if (graphType == GraphGenerator.DEGREE)*/ {
+			Graph.LinkLengthSource source;
+			if (cmd.hasOption("link")) source = new Graph.ConformingLinkSource(cmd.getOptionValue("link"));
+			else source = new Graph.UniformLinkSource();
+			g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"), cmd.hasOption("force-size"), source);
+		}
 
-				if (!quiet) g.printGraphStats(verbose);
-				if (verbose) {
-					System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
-					lastTime = System.currentTimeMillis();
-				}
+		if (!quiet) g.printGraphStats(verbose);
+		if (verbose) {
+			System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
+			lastTime = System.currentTimeMillis();
+		}
 
-				double[] indivStats = g.graphStats();
-				//TODO: 13 is defined because this doubles array has 13 different types of information. This should be a class.
-				for (int i = 0; i < 13; i++) {
-					avgStats[0][i][0] = indivStats[i];
-				}
+		double[] indivStats = g.graphStats();
+		//TODO: 13 is defined because this doubles array has 13 different types of information. This should be a class.
+		for (int i = 0; i < 13; i++) {
+			avgStats[0][i][0] = indivStats[i];
+		}
 
 
 		if (cmd.hasOption("save-graph")) g.write(graphOutput);
 
-				if (cmd.hasOption("probe")) {
-					rand = new MersenneTwister(seed);
-					//Uniform probes if --metropolis-hastings is not specified.
-					probeDistribution(g, rand, maxHops, quiet, verbose, cmd.getOptionValue("output-probe"), !cmd.hasOption("metropolis-hastings"));
-				}
+		if (cmd.hasOption("probe")) {
+			rand = new MersenneTwister(seed);
+			//Uniform probes if --metropolis-hastings is not specified.
+			probeDistribution(g, rand, maxHops, quiet, verbose, cmd.getOptionValue("output-probe"), !cmd.hasOption("metropolis-hastings"));
+		}
 
-				if (cmd.hasOption("route")) {
-					rand = new MersenneTwister(seed);
-					simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose, cmd.getOptionValue("output-route"));
-				}
+		if (cmd.hasOption("route")) {
+			rand = new MersenneTwister(seed);
+			simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose, cmd.getOptionValue("output-route"));
+		}
 
 		if (cmd.hasOption("output-degree")) {
 			int[] degrees = new int[g.maxDegree() + 1];
@@ -345,25 +345,25 @@ public class RoutingSim {
 			}
 		}
 
-				if (verbose) System.out.println();
-			if (!quiet) {
-				System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
-			}
+		if (verbose) System.out.println();
+		if (!quiet) {
+			System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
+		}
 
 		if (!quiet) {
 			System.out.println("Average stats:");
 			System.out.print("p\tq\tpLow\tpInst\tevenSpacing\tfastGeneration\t");
 			Graph.printGraphStatsHeader();
 			System.out.println();
-				System.out.print(gp.p + "\t" + gp.q + "\t" + gp.pLowUptime + "\t" +
-						gp.pInstantReject + "\t" + gp.evenSpacing + "\t" + gp.fastGeneration + "\t");
-				//TODO: Why is this hardcoded to 13?
-				for (int j = 0; j < 13; j++) {
-					//TODO: Hard-coded dimensions bad.
-					ArrayStats s = new ArrayStats(avgStats[0][j]);
-					System.out.print("(" + outputFormat.format(s.mean()) + " " + outputFormat.format(s.stdDev()) + ")\t");
-				}
-				System.out.println();
+			System.out.print(gp.p + "\t" + gp.q + "\t" + gp.pLowUptime + "\t" +
+				gp.pInstantReject + "\t" + gp.evenSpacing + "\t" + gp.fastGeneration + "\t");
+			//TODO: Why is this hardcoded to 13?
+			for (int j = 0; j < 13; j++) {
+				//TODO: Hard-coded dimensions bad.
+				ArrayStats s = new ArrayStats(avgStats[0][j]);
+				System.out.print("(" + outputFormat.format(s.mean()) + " " + outputFormat.format(s.stdDev()) + ")\t");
+			}
+			System.out.println();
 			System.out.println("Total time taken (ms): " + (System.currentTimeMillis() - startTime));
 		}
 	}
@@ -457,7 +457,7 @@ public class RoutingSim {
 	}
 
 	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
-			int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, final String outputPath) {
+	                            int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, final String outputPath) {
 		File outputFile = new File(outputPath);
 		PrintStream stream = null;
 		try {
@@ -529,7 +529,7 @@ public class RoutingSim {
 			for (int i = 0; i < nRequests; i++) {
 				for (int j = 0; j < nIntersectTests; j++) {
 					Request r = requests[i][j];
-					
+
 					int nLowUptimeSinks = r.nLowUptimeSinks(sinkPolicy);
 					int nHighUptimeSinks = r.nHighUptimeSinks(sinkPolicy);
 					int nSinks = nLowUptimeSinks + nHighUptimeSinks;
@@ -541,7 +541,7 @@ public class RoutingSim {
 					nSinks = Math.min(sinkHistSize - 1, nSinks);
 					nLowUptimeSinks = Math.min(sinkHistSize - 1, nLowUptimeSinks);
 					nHighUptimeSinks = Math.min(sinkHistSize - 1, nHighUptimeSinks);
-					
+
 					sinkHist[nSinks]++;
 					lowUptimeSinkHist[nLowUptimeSinks]++;
 					highUptimeSinkHist[nHighUptimeSinks]++;
