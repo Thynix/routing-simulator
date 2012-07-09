@@ -335,6 +335,109 @@ public class Graph {
 	}
 
 	/**
+	 * Writes graph to a file. Format:
+	 * <ul>
+	 *      <li>Number of nodes.</li>
+	 *      <li>Serialized SimpleNodes.</li>
+	 * </ul>
+	 * @param destination file to write graph to.
+	 */
+	public void write(File destination) {
+		try {
+			final FileOutputStream outputStream = new FileOutputStream(destination);
+			final ObjectOutputStream output = new ObjectOutputStream(outputStream);
+
+			// Number of nodes.
+			output.writeInt(nodes.size());
+
+			// Nodes.
+			for (SimpleNode node : nodes) output.writeObject(node);
+
+			/*
+			 * Write connections starting from zero index to higher index nodes. This way each connection
+			 * will only be written once: the other end at a higher index will not write the connection to
+			 * the lower node, which has already been written.
+			 *
+			 * Add to intermediate list first in order to be able to write the number of connections for the
+			 * purposes of reading more easily.
+			 * TODO: Better to read pairs until error? Less extensible.
+			 */
+			final ArrayList<Integer> connectionIndexes = new ArrayList<Integer>();
+			int writtenConnections = 0;
+			for (int i = 0; i < nodes.size(); i++) {
+				for (SimpleNode node: nodes.get(i).getConnections()) {
+					if (node.index > i) {
+						writtenConnections++;
+						connectionIndexes.add(i);
+						connectionIndexes.add(node.index);
+					}
+				}
+			}
+
+			output.writeInt(writtenConnections);
+			System.out.println("Writing " + writtenConnections + " connections.");
+			assert connectionIndexes.size() == writtenConnections * 2;
+			for (Integer index : connectionIndexes) {
+				output.writeInt(index);
+			}
+
+			output.flush();
+			outputStream.close();
+		} catch (IOException e) {
+			System.err.println("Could not write to " + destination.getAbsolutePath() + ":");
+			e.printStackTrace();
+			System.exit(3);
+		}
+	}
+
+	/**
+	 * Constructs the graph from a file.
+	 * @param source file to read the graph from.
+	 * @return graph defined by the file.
+	 */
+	public static Graph read(File source) {
+		try {
+			final FileInputStream inputStream = new FileInputStream(source);
+			final ObjectInputStream input = new ObjectInputStream(inputStream);
+
+			// Number of nodes.
+			final int networkSize = input.readInt();
+			final Graph graph = new Graph(networkSize);
+			graph.locations = new double[networkSize];
+
+			// Nodes.
+			for (int i = 0; i < networkSize; i++) {
+				SimpleNode node = (SimpleNode)input.readObject();
+				node.index = i;
+				graph.locations[i] = node.getLocation();
+				graph.nodes.add(node);
+			}
+
+			final int writtenConnections = input.readInt();
+			System.out.println("Reading " + writtenConnections + " connections.");
+			//Each connection consists of two indexes in a pair.
+			for (int i = 0; i < writtenConnections; i++) {
+				final int from = input.readInt();
+				final int to = input.readInt();
+				//System.out.println(from + " " + to);
+				graph.nodes.get(from).connect(graph.nodes.get(to));
+			}
+
+			return graph;
+		} catch (IOException e) {
+			System.err.println("Could not read from " + source.getAbsolutePath() + ":");
+			e.printStackTrace();
+			System.exit(4);
+			return null;
+		} catch (ClassNotFoundException e) {
+			System.err.println("Unexpected class in graph:");
+			e.printStackTrace();
+			System.exit(5);
+			return null;
+		}
+	}
+
+	/**
 	 * Get a node by index.
 	 *
 	 * @param i Index of node to get

@@ -1,5 +1,9 @@
 package org.freenetproject.routing_simulator;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.ListIterator;
 import java.util.Random;
@@ -7,7 +11,7 @@ import java.util.Random;
 /**
  * A simple node model.  Has a location and a set of connections.
  */
-public class SimpleNode {
+public class SimpleNode implements Serializable {
 	public static final int ROUTE_SUCCESS = 0;
 	public static final int ROUTE_RNF = 1;
 
@@ -22,14 +26,29 @@ public class SimpleNode {
 	/**Index of this node in the graph; purely for convenience, not used in any decision making.*/
 	public int index;
 
-	private final LRUQueue<SimpleNode> lruQueue;
+	private LRUQueue<SimpleNode> lruQueue;
+
+	private void writeObject(ObjectOutputStream out) throws IOException {
+		out.writeDouble(location);
+		out.writeInt(index);
+		out.writeBoolean(lowUptime);
+		out.writeDouble(pInstantReject);
+	}
+
+	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+		location = in.readDouble();
+		//Connections must be initialized later from the network view where other nodes are visible.
+		connections = new ArrayList<SimpleNode>();
+		index = in.readInt();
+		lowUptime = in.readBoolean();
+		pInstantReject = in.readDouble();
+		lruQueue = new LRUQueue<SimpleNode>();
+	}
 
 	/**
 	 * Public constructor.
 	 *
 	 * @param location The routing location of this node.
-	 * @param maxConnections The maximum number of connections this node can have.
-	 * @param id The unique id of this node.
 	 * @param lowUptime Whether this is a low-uptime node
 	 */
 	public SimpleNode(double location, boolean lowUptime, double pInstantReject, Random rand) {
@@ -51,7 +70,7 @@ public class SimpleNode {
 	 *
 	 * @param l Location to compute distance of
 	 * @return The circular routing distance
-	 * @see Location.distance
+	 * @see Location distance
 	 */
 	public double distanceToLoc(double l) {
 		return Location.distance(location, l);
@@ -62,7 +81,7 @@ public class SimpleNode {
 	 *
 	 * @param r Request to compute distance of
 	 * @return The circular routing distance
-	 * @see Location.distance
+	 * @see Location distance
 	 */
 	public double distanceToLoc(Request r) {
 		return distanceToLoc(r.getLocation());
@@ -458,6 +477,7 @@ distloop:
 	public void connect(SimpleNode other) {
 		if (other == this)
 			throw new IllegalArgumentException();
+		assert other != null;
 		if (connections.contains(other) || other.connections.contains(this))
 			throw new IllegalArgumentException();
 
