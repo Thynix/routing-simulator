@@ -29,11 +29,6 @@ public class RoutingSim {
 	//generic output format
 	static DecimalFormat outputFormat = new DecimalFormat("0.000000");
 
-	private enum GraphGenerator {
-		DEGREE,
-		IDEAL
-	}
-
 	/**
 	 * Checks that a path is a directory which can be written to, and attempts to create it if it does not exist.
 	 * Outputs descriptive messages if given anything other than an existing writable directory.
@@ -115,17 +110,14 @@ public class RoutingSim {
 		options.addOption("G", "load-graph", true, "Path to load a saved graph from.");
 		options.addOption("g", "save-graph", true, "Path to save a graph after simulation is run on it.");
 
-		//Graphs: 1D Kleinberg
-		options.addOption("i", "ideal", false, "Use an ideal 1D Kleinberg graph. Requires that --size, --local, --remote, --instant-reject, and --low-uptime be specified.");
-		options.addOption("l", "local", true, "Number of local connections per node.");
-		options.addOption("r", "remote", true, "Number of remote connections per node.");
-		options.addOption("I", "instant-reject", true, "Probability between 0.0 and 1.0 that a connection is instantly rejected.");
-		options.addOption("u", "low-uptime", true, "Probability between 0.0 and 1.0 that a node has low uptime.");
+		//Graphs: link length distribution
+		options.addOption("l", "ideal-link", false, "Kleinberg's ideal distribution: proportional to 1/d.");
+		options.addOption("f", "flat-link", false, "Intentionally terrible distribution: uniformly random.");
+		options.addOption("c", "conforming-link", true, "Distribution conforming to a file. Takes a path to a degree distribution file of the format \"[degree] [number of occurrences]\\n\"\"");
 
-		//Graphs: From degree distribution
-		options.addOption("d", "degree", true, "Use a graph following a given degree distribution. Takes a path to a degree distribution file of the format \"[degree] [number of occurrences]\\n\"");
-		options.addOption("F", "force-size", false, "When using --degree force generation of --size nodes. May cause severe distortion.");
-		options.addOption(null, "link", true, "Use a graph following a given link length distribution. Takes a path to a link distribution file containing a file for the format \"[link length] [arbitrary]\n");
+		//Graphs: degree distribution
+		options.addOption("F", "fixed-degree", true, "All nodes are as close to the specified degree as practical.");
+		options.addOption("C", "conforming-degree", true, "Distribution conforming to a file. Takes a path to a degree distribution file of the format \"[degree] [number of occurrences]\\n\"");
 
 		//Simulations: Routing policies
 		//TODO: But what do the various numbers actually mean?
@@ -134,6 +126,8 @@ public class RoutingSim {
 		options.addOption("q", "requests", true, "Number of requests to run.");
 		options.addOption("n", "intersect-tests", true, "Number of intersect tests per request: same target but random origin.");
 		options.addOption("o", "output-route", true, "File to which routing information is output.");
+		options.addOption("I", "instant-reject", true, "Probability between 0.0 and 1.0 that a connection is instantly rejected.");
+		options.addOption("u", "low-uptime", true, "Probability between 0.0 and 1.0 that a node has low uptime.");
 
 		//Simulations: Probe distribution
 		options.addOption("p", "probe", true, "Simulate running probes from random locations for the specified number of maximum hops. Requires that --output-probe be specified.");
@@ -163,27 +157,25 @@ public class RoutingSim {
 			System.out.println("Simulation will produce no output: --quiet is specified, but not any option which outputs to a file.");
 		}
 
-		int generators = 0;
-		for (String option : new String[] { "ideal", "degree", "load-graph" }) {
-			if (cmd.hasOption(option)) generators++;
+		int degreeOptions = 0;
+		for (String option : new String[] { "fixed-degree", "conforming-degree" }) {
+			if (cmd.hasOption(option)) degreeOptions++;
 		}
 
-		if (generators > 1) {
+		int linkOptions = 0;
+		for (String option : new String[] { "ideal-link", "flat-link", "conforming-link" }) {
+			if (cmd.hasOption(option)) linkOptions++;
+		}
+
+		if (degreeOptions > 1 || linkOptions > 1) {
 			System.out.println("Graph cannot be generated with multiple methods at once.");
 			return;
 		}
-		if (generators == 0) {
+		if (degreeOptions == 0 && linkOptions == 0 && ! cmd.hasOption("load-graph")) {
 			System.out.println("No graph generation method specified.");
 			return;
 		}
-		if (cmd.hasOption("ideal") && (!cmd.hasOption("size") || !cmd.hasOption("local") || !cmd.hasOption("remote"))) {
-			System.out.println("--ideal was specified, but not one or more of its required parameters: --size, --local, --remote.");
-			return;
-		}
-		if (cmd.hasOption("degree") && cmd.hasOption("force-size") && !cmd.hasOption("size")) {
-			System.out.println("--degree and --force-size were specified but not --size.");
-			return;
-		}
+
 		if (cmd.hasOption("route") && (!cmd.hasOption("requests") || !cmd.hasOption("intersect-tests") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime") || !cmd.hasOption("output-route"))) {
 			System.out.println("--route was specified, but not one or more of its required parameters: --requests, --intersect-tests, --instant-reject, --low-uptime, --output-route.");
 			return;
@@ -193,10 +185,15 @@ public class RoutingSim {
 			return;
 		}
 
+		if (!cmd.hasOption("size") && !cmd.hasOption("load-graph")) {
+			System.out.println("Network size not specified. (--size)");
+			return;
+		}
+
 		//Check for problems with specified paths.
 		//Check if input files can be read.
-		if (cmd.hasOption("degree") && ! readableFile(cmd.getOptionValue("degree"))) return;
-		if (cmd.hasOption("link") && ! readableFile(cmd.getOptionValue("link"))) return;
+		if (cmd.hasOption("conforming-degree") && ! readableFile(cmd.getOptionValue("conforming-degree"))) return;
+		if (cmd.hasOption("conforming-link") && ! readableFile(cmd.getOptionValue("conforming-link"))) return;
 		if (cmd.hasOption("load-graph") && !readableFile(cmd.getOptionValue("load-graph"))) return;
 
 		//Check if output paths are directories that can be written to, and create them if they do not exist.
@@ -225,10 +222,6 @@ public class RoutingSim {
 		} else {
 			graphOutput = null;
 		}
-
-		final GraphGenerator graphType;
-		if (cmd.hasOption("ideal")) graphType = GraphGenerator.IDEAL;
-		else /*if (cmd.hasOption(""))*/ graphType = GraphGenerator.DEGREE;
 
 		int nRequests = cmd.hasOption("requests") ? Integer.valueOf(cmd.getOptionValue("requests")) : 4000;
 		int nIntersectTests = cmd.hasOption("intersect-tests") ? Integer.valueOf(cmd.getOptionValue("intersect-tests")) : 2;
@@ -259,7 +252,7 @@ public class RoutingSim {
 
 		rand = new MersenneTwister(seed);
 		GraphParam gp = new GraphParam(
-			cmd.hasOption("size") ? Integer.valueOf(cmd.getOptionValue("size")) : 2,
+			Integer.valueOf(cmd.getOptionValue("size")),
 			cmd.hasOption("local") ? Integer.valueOf(cmd.getOptionValue("local")) : 0,
 			cmd.hasOption("remote") ? Integer.valueOf(cmd.getOptionValue("remote")) : 0,
 			cmd.hasOption("low-uptime") ? Double.valueOf(cmd.getOptionValue("low-uptime")) : 0,
@@ -268,7 +261,7 @@ public class RoutingSim {
 			cmd.hasOption("fast-generation"));
 
 		if (verbose) {
-			System.out.print("Generating " + graphType.name() + " graph of " + gp.n + " nodes, with ");
+			System.out.print("Generating graph of " + gp.n + " nodes, with ");
 			System.out.println("parameters p = " + gp.p + ", q = " + gp.q + ".");
 			System.out.print("pLowUptime = " + gp.pLowUptime + ", pInstantReject = " + gp.pInstantReject);
 			System.out.println(", evenSpacing = " + gp.evenSpacing + ", fastGeneration = " + gp.fastGeneration);
@@ -277,13 +270,17 @@ public class RoutingSim {
 		Graph g;
 		if (cmd.hasOption("load-graph")) {
 			g = Graph.read(new File(cmd.getOptionValue("load-graph")), rand);
-		}
-		else if (graphType == GraphGenerator.IDEAL) g = Graph.generate1dKleinbergGraph(gp, rand);
-		else /*if (graphType == GraphGenerator.DEGREE)*/ {
-			Graph.LinkLengthSource source;
-			if (cmd.hasOption("link")) source = new Graph.ConformingLinkSource(cmd.getOptionValue("link"));
-			else source = new Graph.UniformLinkSource();
-			g = Graph.generatePeerDistGraph(gp, rand, cmd.getOptionValue("degree"), cmd.hasOption("force-size"), source);
+		} else {
+			Graph.LinkLengthSource linkLengthSource;
+			if (cmd.hasOption("conforming-link")) linkLengthSource = new Graph.ConformingLinkSource(cmd.getOptionValue("conforming-link"));
+			else if (cmd.hasOption("ideal-link")) linkLengthSource = new Graph.KleinbergLinkSource();
+			else /*if (cmd.hasOptions("flat-link"))*/ linkLengthSource = new Graph.UniformLinkSource();
+
+			Graph.DegreeSource degreeSource;
+			if (cmd.hasOption("conforming-degree")) degreeSource = new Graph.ConformingDegreeSource(cmd.getOptionValue("conforming-degree"), rand);
+			else /*if (cmd.hasOption("fixed-degree"))*/ degreeSource = new Graph.FixedDegreeSource(Integer.valueOf(cmd.getOptionValue("fixed-degree")));
+
+			g = Graph.generateGraph(gp, rand, degreeSource, linkLengthSource);
 		}
 
 		if (!quiet) g.printGraphStats(verbose);

@@ -14,11 +14,10 @@ public class WeightedDegreeNode extends SimpleNode {
 	 * @param lowUptime
 	 * @param pInstantReject
 	 * @param rand
-	 * @param distribution
+	 * @param candidate
 	 */
-	WeightedDegreeNode(double location, boolean lowUptime, double pInstantReject, Random rand, WeightedDistribution distribution) {
+	WeightedDegreeNode(double location, boolean lowUptime, double pInstantReject, Random rand, int candidate) {
 		super(location, lowUptime, pInstantReject, rand);
-		int candidate = distribution.randomValue();
 		if (candidate == 0) desiredDegree = 1;
 		else desiredDegree = candidate;
 	}

@@ -80,6 +80,39 @@ public class Graph {
 		}
 	}
 
+	public interface DegreeSource {
+		/**
+		 * @return degree conforming to the distribution.
+		 */
+		public int getDegree();
+	}
+
+	public static class FixedDegreeSource implements DegreeSource {
+		private final int degree;
+
+		public FixedDegreeSource(int degree) {
+			this.degree = degree;
+		}
+
+		@Override
+		public int getDegree() {
+			return degree;
+		}
+	}
+
+	public static class ConformingDegreeSource implements DegreeSource {
+		private final WeightedDistribution distribution;
+
+		public ConformingDegreeSource(String filename, Random random) {
+			this.distribution  = new WeightedDistribution(filename, random);
+		}
+
+		@Override
+		public int getDegree() {
+			return distribution.randomValue();
+		}
+	}
+
 	/**
 	 * Private constructor; call one of the generator functions instead.
 	 *
@@ -127,20 +160,16 @@ public class Graph {
 
 	//TODO: Using GraphParam as an argument is beginning to smell: this takes additional arguments and ignores the number of close connections.
 	/**
-	 * Generates a graph with only long connections and a peer count distribution as described in the given file.
+	 * Generates a graph with link length distribution and peer count distribution as described in the given sources.
 	 * @param param graph generation parameters. Local and remote connections irrelevant as given distribution is followed.
 	 * @param rand used for random numbers
-	 * @param filename Desired occurrences in format of "[number of peers] [occurrences]" on each line.
-	 * @param forceSize If true, the size in param is used. If not, the sum of occurrences in the distribution file.
 	 * @return specified graph
 	 */
-	public static Graph generatePeerDistGraph(GraphParam param, Random rand, String filename, boolean forceSize, LinkLengthSource linkLengthSource) {
-		WeightedDistribution distribution = new WeightedDistribution(filename, new Random(rand.nextLong()));
-		param = new GraphParam(forceSize ? param.n : distribution.totalOccurances, param.p, param.q, param.pLowUptime, param.pInstantReject, param.evenSpacing, param.fastGeneration);
+	public static Graph generateGraph(GraphParam param, Random rand, DegreeSource degreeSource, LinkLengthSource linkLengthSource) {
 		Graph g = new Graph(param.n);
 		g.generateNodes(param, rand);
 		for (SimpleNode node : g.nodes) {
-			g.nodes.set(node.index, new WeightedDegreeNode(node.getLocation(), node.lowUptime(), param.pInstantReject, rand, distribution));
+			g.nodes.set(node.index, new WeightedDegreeNode(node.getLocation(), node.lowUptime(), param.pInstantReject, rand, degreeSource.getDegree()));
 			g.nodes.get(node.index).index = node.index;
 		}
 
