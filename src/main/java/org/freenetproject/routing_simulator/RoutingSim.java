@@ -252,7 +252,11 @@ public class RoutingSim {
 
 		rand = new MersenneTwister(seed);
 		GraphParam gp = new GraphParam(
-			Integer.valueOf(cmd.getOptionValue("size")),
+			/*
+			 * Size need not be specified if loading an existing graph, but the GraphParam constructor
+			 * enforces a minimum.
+			 */
+			cmd.hasOption("size") ? Integer.valueOf(cmd.getOptionValue("size")) : 2,
 			cmd.hasOption("local") ? Integer.valueOf(cmd.getOptionValue("local")) : 0,
 			cmd.hasOption("remote") ? Integer.valueOf(cmd.getOptionValue("remote")) : 0,
 			cmd.hasOption("low-uptime") ? Double.valueOf(cmd.getOptionValue("low-uptime")) : 0,
