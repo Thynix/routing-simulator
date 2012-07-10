@@ -236,9 +236,6 @@ public class RoutingSim {
 		//TODO: Hard-coded dimensions bad - clean this up.
 		double[][][] avgStats = new double[1][13][1];
 
-		//Time tracking: report time taken for each graph setting if verbose; upon completion otherwise.
-		long startTime = System.currentTimeMillis();
-		long lastTime = startTime;
 		final boolean quiet = cmd.hasOption("quiet");
 		final boolean verbose = cmd.hasOption("verbose");
 		final int seed = cmd.hasOption("seed") ? Integer.valueOf(cmd.getOptionValue("seed")) : 0;
@@ -271,6 +268,10 @@ public class RoutingSim {
 			System.out.println(", evenSpacing = " + gp.evenSpacing + ", fastGeneration = " + gp.fastGeneration);
 		}
 
+		//Time tracking: report time taken for each graph setting if verbose; upon completion otherwise.
+		long startTime = System.currentTimeMillis();
+		long lastTime = startTime;
+
 		Graph g;
 		if (cmd.hasOption("load-graph")) {
 			g = Graph.read(new File(cmd.getOptionValue("load-graph")), rand);
@@ -287,9 +288,9 @@ public class RoutingSim {
 			g = Graph.generateGraph(gp, rand, degreeSource, linkLengthSource);
 		}
 
-		if (!quiet) g.printGraphStats(verbose);
-		if (verbose) {
-			System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
+		if (!quiet) {
+			g.printGraphStats(verbose);
+			System.out.println("Generation took (ms): " + (System.currentTimeMillis() - lastTime));
 			lastTime = System.currentTimeMillis();
 		}
 
