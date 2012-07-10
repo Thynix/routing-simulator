@@ -300,9 +300,6 @@ public class RoutingSim {
 			avgStats[0][i][0] = indivStats[i];
 		}
 
-
-		if (cmd.hasOption("save-graph")) g.write(graphOutput);
-
 		if (cmd.hasOption("probe")) {
 			rand = new MersenneTwister(seed);
 			//Uniform probes if --metropolis-hastings is not specified.
@@ -346,6 +343,8 @@ public class RoutingSim {
 				}
 			}
 		}
+
+		if (cmd.hasOption("save-graph")) g.write(graphOutput);
 
 		if (verbose) System.out.println();
 		if (!quiet) {
