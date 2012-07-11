@@ -239,51 +239,114 @@ distloop:
 
 	/**
 	 * Called to offer a connection between the specified peer and this one during path folding.
-	 * The lowest peer in the LRU queue is dropped to make room. TODO: More complex modelling of when to drop.
+	 * The lowest peer in the LRU queue is dropped to make room. Refuses to fold to self or to a node which is
+	 * already connected.
 	 * @param peer peer to consider a connection to.
+	 * @param acceptanceRate probability of accepting the fold.
 	 * @return whether the offered connection was accepted.
 	 */
-	public boolean offerPathFold(final SimpleNode peer) {
-		disconnect(lruQueue.pop());
+	public boolean offerPathFold(final SimpleNode peer, double acceptanceRate) {
+		// Do not path fold to self.
+		if (peer == this) return false;
+		// Do not path fold to a node which is already connected. TODO: Connections undirected - both should be true if either is.
+		if (this.connections.contains(peer) || peer.connections.contains(this)) return false;
+		if (rand.nextDouble() < (1.0 - acceptanceRate)) return false;
+
+		// Disconnect from least, but restore invariant that both are in each other's LRU queues.
+		final SimpleNode least = lruQueue.pop();
+		if (least == null) return false;
+		lruQueue.pushLeast(least);
+		disconnect(least);
 		// Peers added via path folding are added to the end.
-		lruQueue.pushLeast(peer);
 		connect(peer);
+		lruQueue.remove(peer);
+		lruQueue.pushLeast(peer);
+		peer.lruQueue.remove(this);
+		peer.lruQueue.pushLeast(this);
 		return true;
 	}
 
 	/**
-	 * Indicates a successful fetch: starting with the last node on the chain, nodes successively offers previous
+	 * Folds with FREENET policy.
+	 * Starting with the last node on the chain, nodes successively offers previous
 	 * nodes a connection. If the connection is accepted the process starts again from the node previous to the
 	 * accepting node.
 	 * @param nodeChain Nodes which make up the path the request has followed. First element is the origin of the
 	 *                  request; last is the endpoint.
 	 */
-	private static void success(final ArrayList<SimpleNode> nodeChain) {
-		final ListIterator<SimpleNode> iterator = nodeChain.listIterator();
+	private static void successFreenet(final ArrayList<SimpleNode> nodeChain) {
+		// Iterate starting at the end.
+		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
 
 		SimpleNode foldingFrom;
 		if (iterator.hasPrevious()) foldingFrom = iterator.previous();
 		else return;
 
-		//Start from the last node.
+		//Start from the second-to-last node.
 		while (iterator.hasPrevious()) {
 			//If the path fold is accepted, the one before the accepting one starts another fold.
-			if (iterator.previous().offerPathFold(foldingFrom) && iterator.hasPrevious()) {
+			//Use 7% acceptance as rough result from my node. TODO: Model Freenet's behavior for more accurate bootstrapping simulation.
+			if (iterator.previous().offerPathFold(foldingFrom, 0.07) && iterator.hasPrevious()) {
 				foldingFrom = iterator.previous();
 			}
 		}
 	}
 
 	/**
+	 * Folds with SANDBURG policy.
+	 * Offers a connection to the endpoint to every other node.
+	 * @param nodeChain  Nodes which make up the path the request has followed. First element is the origin of the
+	 *                   request; last is the endpoint.
+	 */
+	private static void successSandburg(final ArrayList<SimpleNode> nodeChain) {
+		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
+
+		final SimpleNode endpoint;
+		if (iterator.hasPrevious()) endpoint = iterator.previous();
+		else return;
+
+		//Accept path fold with 1/path length probability.
+		final double acceptProbability = 1 / nodeChain.size();
+
+		while (iterator.hasPrevious()) {
+			iterator.previous().offerPathFold(endpoint, acceptProbability);
+		}
+	}
+
+	private static void success(final ArrayList<SimpleNode> nodeChain, PathFolding policy) {
+		switch (policy) {
+		case NONE: return;
+		case FREENET: successFreenet(nodeChain);
+		case SANDBERG: successSandburg(nodeChain);
+		}
+	}
+
+	public enum PathFolding {
+		/**
+		 * Do not perform path folding.
+		 */
+		NONE,
+		/**
+		 * Path fold with 7% acceptance - each node along the chain, multiple times.
+		 */
+		FREENET,
+		/**
+		 * Path fold only between origin and endpoint with probability inverse of path length.
+		 */
+		SANDBERG
+	}
+
+	/**
 	 * Route a request.  Routing policy is chosen by
 	 * <code>r.routePolicy</code>.
 	 *
 	 * @param r The request to route
 	 * @param origin the previous node in the chain.
+	 * @param folding path folding policy to use on success
 	 * @return Code indicating result
 	 */
-	public int route(final Request r, final SimpleNode origin) {
-		return route(r, origin, new ArrayList<SimpleNode>());
+	public int route(final Request r, final SimpleNode origin, final PathFolding folding) {
+		return route(r, origin, folding, new ArrayList<SimpleNode>());
 	}
 
 	/**
@@ -294,7 +357,7 @@ distloop:
 	 * @param origin the previous node in the chain.
 	 * @return Code indicating result
 	 */
-	public int route(final Request r, final SimpleNode origin, final ArrayList<SimpleNode> previousNodes) {
+	public int route(final Request r, final SimpleNode origin, final PathFolding folding, final ArrayList<SimpleNode> previousNodes) {
 		assert r.getHTL() <= Request.MAX_HTL;
 		assert r.getHTL() > 0;
 		assert !isLoop(r);
@@ -309,7 +372,7 @@ distloop:
 		if (r.getHTL() == 0) {
 			//ran out of HTL; successfully routed.
 			//r.sink(this, isSink(r, routable, origin, destNode));
-			success(previousNodes);
+			success(previousNodes, folding);
 			return RESULT_SUCCESS;
 		}
 
@@ -348,9 +411,9 @@ distloop:
 				continue;
 			}
 
-			int routeResult = destNode.route(r, this);
+			int routeResult = destNode.route(r, this, folding, previousNodes);
 			if (routeResult == RESULT_SUCCESS) {
-				success(previousNodes);
+				success(previousNodes, folding);
 				return RESULT_SUCCESS;
 			} else if (routeResult == RESULT_RNF || routeResult == RESULT_INSTANT_REJECT) {
 				routable[dest] = false;
@@ -360,7 +423,7 @@ distloop:
 
 			if (r.getHTL() == 0) {
 				//ran out of HTL while routing here or downstream (ie downstream RNF)
-				success(previousNodes);
+				success(previousNodes, folding);
 				return RESULT_SUCCESS;
 			}
 		}

@@ -121,13 +121,14 @@ public class RoutingSim {
 
 		//Simulations: Routing policies
 		//TODO: But what do the various numbers actually mean?
-		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --instant-reject, --low-uptime, --requests, --output-route, and --intersect-tests be specified.");
+		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --instant-reject, --low-uptime, --requests, --output-route, --intersect-tests, and --fold-policy be specified.");
 		//TODO: Explain more on these - what are their effects?
 		options.addOption("q", "requests", true, "Number of requests to run.");
 		options.addOption("n", "intersect-tests", true, "Number of intersect tests per request: same target but random origin.");
 		options.addOption("o", "output-route", true, "File to which routing information is output.");
 		options.addOption("I", "instant-reject", true, "Probability between 0.0 and 1.0 that a connection is instantly rejected.");
 		options.addOption("u", "low-uptime", true, "Probability between 0.0 and 1.0 that a node has low uptime.");
+		options.addOption("P", "fold-policy", true, "Path folding policy: NONE, FREENET, or SANDBERG");
 
 		//Simulations: Probe distribution
 		options.addOption("p", "probe", true, "Simulate running probes from random locations for the specified number of maximum hops. Requires that --output-probe be specified.");
@@ -176,8 +177,8 @@ public class RoutingSim {
 			return;
 		}
 
-		if (cmd.hasOption("route") && (!cmd.hasOption("requests") || !cmd.hasOption("intersect-tests") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime") || !cmd.hasOption("output-route"))) {
-			System.out.println("--route was specified, but not one or more of its required parameters: --requests, --intersect-tests, --instant-reject, --low-uptime, --output-route.");
+		if (cmd.hasOption("route") && (!cmd.hasOption("requests") || !cmd.hasOption("intersect-tests") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime") || !cmd.hasOption("output-route") || !cmd.hasOption("fold-policy"))) {
+			System.out.println("--route was specified, but not one or more of its required parameters: --requests, --intersect-tests, --instant-reject, --low-uptime, --output-route, --fold-policy.");
 			return;
 		}
 		if (cmd.hasOption("probe") && !cmd.hasOption("output-probe")) {
@@ -188,6 +189,23 @@ public class RoutingSim {
 		if (!cmd.hasOption("size") && !cmd.hasOption("load-graph")) {
 			System.out.println("Network size not specified. (--size)");
 			return;
+		}
+
+		final SimpleNode.PathFolding pathFolding;
+		if (cmd.hasOption("fold-policy")) {
+			try {
+				pathFolding = SimpleNode.PathFolding.valueOf(cmd.getOptionValue("fold-policy"));
+			} catch (IllegalArgumentException e) {
+				System.out.println("The folding policy \"" + cmd.getOptionValue("fold-policy") + "\" is invalid.");
+				System.out.println("Possible values are:");
+				for (SimpleNode.PathFolding policy : SimpleNode.PathFolding.values()) {
+					System.out.println(policy.toString());
+				}
+				e.printStackTrace();
+				return;
+			}
+		} else {
+			pathFolding = SimpleNode.PathFolding.NONE;
 		}
 
 		//Check for problems with specified paths.
@@ -308,7 +326,7 @@ public class RoutingSim {
 
 		if (cmd.hasOption("route")) {
 			rand = new MersenneTwister(seed);
-			simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose, cmd.getOptionValue("output-route"));
+			simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose, cmd.getOptionValue("output-route"), pathFolding);
 		}
 
 		if (cmd.hasOption("output-degree")) {
@@ -458,7 +476,8 @@ public class RoutingSim {
 	}
 
 	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
-	                            int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, final String outputPath) {
+	                            int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, final String outputPath,
+	                            SimpleNode.PathFolding policy) {
 		File outputFile = new File(outputPath);
 		PrintStream stream = null;
 		try {
@@ -495,7 +514,7 @@ public class RoutingSim {
 			for (int j = 0; j < nIntersectTests; j++) {
 				Request r = requests[i][j];
 				SimpleNode origin = g.getNode(requestOrigins[i][j]);
-				origin.route(r, null);
+				origin.route(r, null, policy);
 			}
 		}
 
