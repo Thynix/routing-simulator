@@ -482,10 +482,10 @@ distloop:
 	 */
 	public void connect(SimpleNode other) {
 		if (other == this)
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Cannot connect to self.");
 		assert other != null;
 		if (connections.contains(other) || other.connections.contains(this))
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Cannot connect: already connected.");
 
 		connections.add(other);
 		other.connections.add(this);
@@ -500,9 +500,9 @@ distloop:
 	 */
 	public void disconnect(SimpleNode other) {
 		if (other == this)
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Cannot disconnect from self.");
 		if (!connections.contains(other) || !other.connections.contains(this))
-			throw new IllegalArgumentException();
+			throw new IllegalArgumentException("Cannot disconnect: not connected.");
 
 		connections.remove(other);
 		other.connections.remove(this);
