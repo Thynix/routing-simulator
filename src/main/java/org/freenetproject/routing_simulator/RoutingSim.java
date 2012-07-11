@@ -105,8 +105,7 @@ public class RoutingSim {
 		//TODO: Scale degree distribution (Also results?) to arbitrary network size - attempt to avoid distortion.
 		options.addOption("s", "size", true, "Number of nodes in the network. Currently ignored when using --degree unless --force-size is specified.");
 		//TODO: Does it make sense to use fastGeneration without evenSpacing? Assuming it doesn't.
-		options.addOption("f", "fast-generation", false, "If present, the simulator will assign locations as per --evenspacing and take shortcuts to speed up graph generation.");
-		options.addOption("e", "even-spacing", false, "If present, the simulator will space nodes evenly throughout locations.");
+		options.addOption("f", "fast-generation", false, "If present, the simulator will assign locations with even spacing and take shortcuts to speed up graph generation.");
 		options.addOption("G", "load-graph", true, "Path to load a saved graph from.");
 		options.addOption("g", "save-graph", true, "Path to save a graph after simulation is run on it.");
 
@@ -276,14 +275,13 @@ public class RoutingSim {
 			cmd.hasOption("remote") ? Integer.valueOf(cmd.getOptionValue("remote")) : 0,
 			cmd.hasOption("low-uptime") ? Double.valueOf(cmd.getOptionValue("low-uptime")) : 0,
 			cmd.hasOption("instant-reject") ? Double.valueOf(cmd.getOptionValue("instant-reject")) : 0,
-			cmd.hasOption("evenspacing") || cmd.hasOption("fast-generation"),
 			cmd.hasOption("fast-generation"));
 
 		if (verbose) {
 			System.out.print("Generating graph of " + gp.n + " nodes, with ");
 			System.out.println("parameters p = " + gp.p + ", q = " + gp.q + ".");
 			System.out.print("pLowUptime = " + gp.pLowUptime + ", pInstantReject = " + gp.pInstantReject);
-			System.out.println(", evenSpacing = " + gp.evenSpacing + ", fastGeneration = " + gp.fastGeneration);
+			System.out.println(", fastGeneration = " + gp.fastGeneration);
 		}
 
 		//Time tracking: report time taken for each graph setting if verbose; upon completion otherwise.
@@ -371,11 +369,11 @@ public class RoutingSim {
 
 		if (!quiet) {
 			System.out.println("Average stats:");
-			System.out.print("p\tq\tpLow\tpInst\tevenSpacing\tfastGeneration\t");
+			System.out.print("p\tq\tpLow\tpInst\tfastGeneration\t");
 			Graph.printGraphStatsHeader();
 			System.out.println();
 			System.out.print(gp.p + "\t" + gp.q + "\t" + gp.pLowUptime + "\t" +
-				gp.pInstantReject + "\t" + gp.evenSpacing + "\t" + gp.fastGeneration + "\t");
+				gp.pInstantReject + "\t" + gp.fastGeneration + "\t");
 			//TODO: Why is this hardcoded to 13?
 			for (int j = 0; j < 13; j++) {
 				//TODO: Hard-coded dimensions bad.

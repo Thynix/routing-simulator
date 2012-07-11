@@ -128,7 +128,7 @@ public class Graph {
 
 	private void generateNodes(GraphParam param, Random rand) {
 		locations = new double[param.n];
-		if (param.evenSpacing) {
+		if (param.fastGeneration) {
 			for (int i = 0; i < param.n; i++) locations[i] = (1.0 * i) / param.n;
 		} else {
 			for (int i = 0; i < param.n; i++) locations[i] = rand.nextDouble();
@@ -254,7 +254,6 @@ public class Graph {
 		final int p = param.p;
 		final double pLowUptime = param.pLowUptime;
 		final double pInstantReject = param.pInstantReject;
-		final boolean evenSpacing = param.evenSpacing;
 		final boolean fastGeneration = param.fastGeneration;
 
 		Graph g = new Graph(n);
@@ -804,7 +803,7 @@ public class Graph {
 		for (int trial = 0; trial < nTrials; trial++) {
 			System.out.println("Creating test graph...");
 			Random rand = new MersenneTwister(trial);
-			Graph g = generate1dKleinbergGraph(new GraphParam(nNodes, p, q, 0.0, 0.0, true, false), rand);
+			Graph g = generate1dKleinbergGraph(new GraphParam(nNodes, p, q, 0.0, 0.0, true), rand);
 			g.printGraphStats(true);
 			int[] uniformWalkDist;
 			int[] weightedWalkDist;
