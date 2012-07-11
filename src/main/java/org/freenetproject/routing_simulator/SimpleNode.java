@@ -302,6 +302,7 @@ distloop:
 		if (origin != null && rand.nextDouble() < pInstantReject) {
 			return RESULT_INSTANT_REJECT;
 		}
+		previousNodes.add(this);
 		lastRequest = r;
 		r.handleArrival(this);
 		r.decrementHTL();
