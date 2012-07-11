@@ -1,6 +1,6 @@
-package org.freenetproject.routing_simulator;
+package org.freenetproject.routing_simulator.util.lru;
 
-import org.freenetproject.routing_simulator.DoublyLinkedList.Item;
+import org.freenetproject.routing_simulator.util.lru.DoublyLinkedList.Item;
 
 /**
  * Indicates an attempt to link a DoublyLinkedList.Item into

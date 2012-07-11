@@ -1,11 +1,16 @@
-package org.freenetproject.routing_simulator;
+package org.freenetproject.routing_simulator.graph;
 
-import java.io.BufferedReader;
+import org.freenetproject.routing_simulator.Request;
+import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
+import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
+import org.freenetproject.routing_simulator.graph.node.SimpleNode;
+import org.freenetproject.routing_simulator.graph.node.WeightedDegreeNode;
+import org.freenetproject.routing_simulator.util.ArrayStats;
+import org.freenetproject.routing_simulator.util.MersenneTwister;
+
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
-import java.io.FileReader;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -21,86 +26,6 @@ import java.util.Random;
 public class Graph {
 	private ArrayList<SimpleNode> nodes;
 	private double[] locations;
-
-	public interface LinkLengthSource {
-		/**
-		 * @return a desired link length for a connection determined by the link length distribution scheme.
-		 * This will be attempted to be matched as closely as location distribution allows.
-		 */
-		public double getLinkLength(Random random);
-	}
-
-	/**
-	 * Generates link lengths with uniform / flat probability. Terrible distribution.
-	 */
-	public static class UniformLinkSource implements LinkLengthSource {
-		@Override
-		public double getLinkLength(Random random) {
-			return random.nextDouble() * 0.5;
-		}
-	}
-
-	public static class ConformingLinkSource implements LinkLengthSource {
-		private final ArrayList<Double> lengths;
-		public ConformingLinkSource(String filename) {
-			lengths = new ArrayList<Double>();
-			try {
-				BufferedReader reader = new BufferedReader(new FileReader(new File(filename)));
-				//TODO: Read all, put into ArrayList, get a link length selects from that.
-				String line;
-				//TODO: This seems like a C++ way of doing things. What's the Java way?
-				while ( (line = reader.readLine()) != null) {
-					//File format has link length as first value, separated by a space.
-					lengths.add(Double.valueOf(line.split(" ")[0]));
-				}
-			} catch (FileNotFoundException e) {
-				System.out.println(e);
-				System.out.println("Unable to open file \"" + filename + "\".");
-				System.exit(1);
-			} catch (IOException e) {
-				System.out.println(e);
-				System.exit(2);
-			}
-		}
-
-		@Override
-		public double getLinkLength(Random random) {
-			return lengths.get(random.nextInt(lengths.size()));
-		}
-	}
-
-	public interface DegreeSource {
-		/**
-		 * @return degree conforming to the distribution.
-		 */
-		public int getDegree();
-	}
-
-	public static class FixedDegreeSource implements DegreeSource {
-		private final int degree;
-
-		public FixedDegreeSource(int degree) {
-			this.degree = degree;
-		}
-
-		@Override
-		public int getDegree() {
-			return degree;
-		}
-	}
-
-	public static class ConformingDegreeSource implements DegreeSource {
-		private final WeightedDistribution distribution;
-
-		public ConformingDegreeSource(String filename, Random random) {
-			this.distribution  = new WeightedDistribution(filename, random);
-		}
-
-		@Override
-		public int getDegree() {
-			return distribution.randomValue();
-		}
-	}
 
 	/**
 	 * Private constructor; call one of the generator functions instead.
@@ -171,6 +96,7 @@ public class Graph {
 			WeightedDegreeNode src = (WeightedDegreeNode) g.nodes.get(i);
 			if (src.atDegree()) continue;
 			WeightedDegreeNode dest;
+			//TODO: fast generation forces ideal link length?
 			if (param.fastGeneration) {
 				//Continuous approximation to 1/d distribution; accurate in the large n case.
 				//Treats spacing as even, whether or not that is accurate.

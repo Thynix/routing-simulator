@@ -1,4 +1,4 @@
-package org.freenetproject.routing_simulator;
+package org.freenetproject.routing_simulator.util.lru;
 
 /**
  * Indicates an attempt to link two DoublyLinkedList.Item's,

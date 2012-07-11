@@ -1,5 +1,8 @@
 package org.freenetproject.routing_simulator;
 
+import org.freenetproject.routing_simulator.graph.Graph;
+import org.freenetproject.routing_simulator.graph.node.SimpleNode;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;

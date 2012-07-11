@@ -1,4 +1,4 @@
-package org.freenetproject.routing_simulator;
+package org.freenetproject.routing_simulator.util.lru;
 
 import java.util.Enumeration;
 import java.util.Iterator;

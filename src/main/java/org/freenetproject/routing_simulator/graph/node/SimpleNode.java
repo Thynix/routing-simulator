@@ -1,4 +1,8 @@
-package org.freenetproject.routing_simulator;
+package org.freenetproject.routing_simulator.graph.node;
+
+import org.freenetproject.routing_simulator.util.lru.LRUQueue;
+import org.freenetproject.routing_simulator.graph.Location;
+import org.freenetproject.routing_simulator.Request;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -78,7 +82,7 @@ public class SimpleNode implements Serializable {
 	 *
 	 * @param l Location to compute distance of
 	 * @return The circular routing distance
-	 * @see Location distance
+	 * @see org.freenetproject.routing_simulator.graph.Location distance
 	 */
 	public double distanceToLoc(double l) {
 		return Location.distance(location, l);
@@ -237,6 +241,29 @@ distloop:
 	public static final int RESULT_RNF = 1;
 	public static final int RESULT_INSTANT_REJECT = 2;
 
+	/*private enum ConnectionState {
+		CONNECTED,
+		DISCONNECTED
+	}*/
+
+	/**
+	 * Check that invariants hold between this node and the given. For debugging.
+	 * @param other Other node to check this node's relationship with.
+	 * @param connected Whether the two should be connected or not.
+	 */
+	/*private void checkInvariants(SimpleNode other, ConnectionState connected) {
+		switch (connected) {
+		case CONNECTED:
+			assert lruQueue.contains(other) && other.lruQueue.contains(this);
+			assert isConnected(other) && other.isConnected(this);
+			break;
+		case DISCONNECTED:
+			assert !lruQueue.contains(other) && !other.lruQueue.contains(this);
+			assert !isConnected(other) && !other.isConnected(this);
+			break;
+		}
+	}*/
+
 	/**
 	 * Called to offer a connection between the specified peer and this one during path folding.
 	 * The lowest peer in the LRU queue is dropped to make room. Refuses to fold to self or to a node which is
@@ -256,13 +283,20 @@ distloop:
 		final SimpleNode least = lruQueue.pop();
 		if (least == null) return false;
 		lruQueue.pushLeast(least);
+
+		//checkInvariants(least, ConnectionState.CONNECTED);
 		disconnect(least);
+		//checkInvariants(least, ConnectionState.DISCONNECTED);
+
 		// Peers added via path folding are added to the end.
+		//checkInvariants(peer, ConnectionState.DISCONNECTED);
 		connect(peer);
 		lruQueue.remove(peer);
 		lruQueue.pushLeast(peer);
 		peer.lruQueue.remove(this);
 		peer.lruQueue.pushLeast(this);
+		//checkInvariants(peer, ConnectionState.CONNECTED);
+
 		return true;
 	}
 
@@ -275,6 +309,8 @@ distloop:
 	 *                  request; last is the endpoint.
 	 */
 	private static void successFreenet(final ArrayList<SimpleNode> nodeChain) {
+		//TODO: Include HTL in the chain to test not path folding at high HTL.
+		//TODO: Immediate peers should also be bumped up in the LRU upon success.
 		// Iterate starting at the end.
 		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
 
@@ -550,10 +586,16 @@ distloop:
 		if (isConnected(other) || other.isConnected(this))
 			throw new IllegalArgumentException("Cannot connect: already connected.");
 
+		// Should not be connected.
+		//checkInvariants(other, ConnectionState.DISCONNECTED);
+
 		connections.add(other);
 		lruQueue.push(other);
 		other.connections.add(this);
 		other.lruQueue.push(this);
+
+		// Now connected.
+		//checkInvariants(other, ConnectionState.CONNECTED);
 	}
 
 	/**
@@ -567,10 +609,16 @@ distloop:
 		if (!isConnected(other) || !other.isConnected(this))
 			throw new IllegalArgumentException("Cannot disconnect: not connected.");
 
+		// Should be connected.
+		//checkInvariants(other, ConnectionState.CONNECTED);
+
 		connections.remove(other);
 		lruQueue.remove(other);
 		other.connections.remove(this);
 		other.lruQueue.remove(this);
+
+		// Now disconnected.
+		//checkInvariants(other, ConnectionState.DISCONNECTED);
 	}
 
 	/**

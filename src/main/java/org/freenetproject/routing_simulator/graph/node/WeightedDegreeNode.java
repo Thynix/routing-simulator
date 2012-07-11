@@ -1,4 +1,6 @@
-package org.freenetproject.routing_simulator;
+package org.freenetproject.routing_simulator.graph.node;
+
+import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 
 import java.util.Random;
 
@@ -16,7 +18,7 @@ public class WeightedDegreeNode extends SimpleNode {
 	 * @param rand
 	 * @param candidate
 	 */
-	WeightedDegreeNode(double location, boolean lowUptime, double pInstantReject, Random rand, int candidate) {
+	public WeightedDegreeNode(double location, boolean lowUptime, double pInstantReject, Random rand, int candidate) {
 		super(location, lowUptime, pInstantReject, rand);
 		if (candidate == 0) desiredDegree = 1;
 		else desiredDegree = candidate;

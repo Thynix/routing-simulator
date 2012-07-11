@@ -6,6 +6,17 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.freenetproject.routing_simulator.graph.Graph;
+import org.freenetproject.routing_simulator.graph.GraphParam;
+import org.freenetproject.routing_simulator.graph.degree.ConformingDegreeSource;
+import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
+import org.freenetproject.routing_simulator.graph.degree.FixedDegreeSource;
+import org.freenetproject.routing_simulator.graph.linklength.ConformingLinkSource;
+import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
+import org.freenetproject.routing_simulator.graph.linklength.UniformLinkSource;
+import org.freenetproject.routing_simulator.graph.node.SimpleNode;
+import org.freenetproject.routing_simulator.util.ArrayStats;
+import org.freenetproject.routing_simulator.util.MersenneTwister;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -292,14 +303,14 @@ public class RoutingSim {
 		if (cmd.hasOption("load-graph")) {
 			g = Graph.read(new File(cmd.getOptionValue("load-graph")), rand);
 		} else {
-			Graph.LinkLengthSource linkLengthSource;
-			if (cmd.hasOption("conforming-link")) linkLengthSource = new Graph.ConformingLinkSource(cmd.getOptionValue("conforming-link"));
+			LinkLengthSource linkLengthSource;
+			if (cmd.hasOption("conforming-link")) linkLengthSource = new ConformingLinkSource(cmd.getOptionValue("conforming-link"));
 			else if (cmd.hasOption("ideal-link")) linkLengthSource = null;
-			else /*if (cmd.hasOptions("flat-link"))*/ linkLengthSource = new Graph.UniformLinkSource();
+			else /*if (cmd.hasOptions("flat-link"))*/ linkLengthSource = new UniformLinkSource();
 
-			Graph.DegreeSource degreeSource;
-			if (cmd.hasOption("conforming-degree")) degreeSource = new Graph.ConformingDegreeSource(cmd.getOptionValue("conforming-degree"), rand);
-			else /*if (cmd.hasOption("fixed-degree"))*/ degreeSource = new Graph.FixedDegreeSource(Integer.valueOf(cmd.getOptionValue("fixed-degree")));
+			DegreeSource degreeSource;
+			if (cmd.hasOption("conforming-degree")) degreeSource = new ConformingDegreeSource(cmd.getOptionValue("conforming-degree"), rand);
+			else /*if (cmd.hasOption("fixed-degree"))*/ degreeSource = new FixedDegreeSource(Integer.valueOf(cmd.getOptionValue("fixed-degree")));
 
 			if (linkLengthSource == null) {
 				g = Graph.generate1dKleinbergGraph(gp, rand);

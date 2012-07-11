@@ -1,4 +1,4 @@
-package org.freenetproject.routing_simulator;
+package org.freenetproject.routing_simulator.util;
 
 import java.io.BufferedReader;
 import java.io.File;
