@@ -23,25 +23,6 @@ public class Graph {
 	}
 
 	/**
-	 * Generates link lengths with a probability proportional to 1/d. Ideal distribution.
-	 */
-	public static class KleinbergLinkSource implements LinkLengthSource {
-		//TODO: Uh. Proportional to 1/d... is this where the network size comes in? :/
-		public double KLEINBERG_PROPORTIONALITY = 0.1;
-		@Override
-		public double getLinkLength(Random random) {
-			//Exit when a link is accepted.
-			while (true) {
-				//Distances between locations can be a maximum of 0.5.
-				double distance = random.nextDouble() * 0.5;
-				if (random.nextDouble() < distance * KLEINBERG_PROPORTIONALITY) {
-					return distance;
-				}
-			}
-		}
-	}
-
-	/**
 	 * Generates link lengths with uniform / flat probability. Terrible distribution.
 	 */
 	public static class UniformLinkSource implements LinkLengthSource {

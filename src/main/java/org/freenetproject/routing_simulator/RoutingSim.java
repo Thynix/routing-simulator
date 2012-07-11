@@ -294,14 +294,18 @@ public class RoutingSim {
 		} else {
 			Graph.LinkLengthSource linkLengthSource;
 			if (cmd.hasOption("conforming-link")) linkLengthSource = new Graph.ConformingLinkSource(cmd.getOptionValue("conforming-link"));
-			else if (cmd.hasOption("ideal-link")) linkLengthSource = new Graph.KleinbergLinkSource();
+			else if (cmd.hasOption("ideal-link")) linkLengthSource = null;
 			else /*if (cmd.hasOptions("flat-link"))*/ linkLengthSource = new Graph.UniformLinkSource();
 
 			Graph.DegreeSource degreeSource;
 			if (cmd.hasOption("conforming-degree")) degreeSource = new Graph.ConformingDegreeSource(cmd.getOptionValue("conforming-degree"), rand);
 			else /*if (cmd.hasOption("fixed-degree"))*/ degreeSource = new Graph.FixedDegreeSource(Integer.valueOf(cmd.getOptionValue("fixed-degree")));
 
-			g = Graph.generateGraph(gp, rand, degreeSource, linkLengthSource);
+			if (linkLengthSource == null) {
+				g = Graph.generate1dKleinbergGraph(gp, rand);
+			} else {
+				g = Graph.generateGraph(gp, rand, degreeSource, linkLengthSource);
+			}
 		}
 
 		if (!quiet) {
