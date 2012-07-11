@@ -490,7 +490,7 @@ distloop:
 		connections.add(other);
 		other.connections.add(this);
 		lruQueue.push(other);
-		other.lruQueue.push(other);
+		other.lruQueue.push(this);
 	}
 
 	/**
@@ -507,7 +507,7 @@ distloop:
 		connections.remove(other);
 		other.connections.remove(this);
 		lruQueue.remove(other);
-		other.lruQueue.remove(other);
+		other.lruQueue.remove(this);
 	}
 
 	/**
