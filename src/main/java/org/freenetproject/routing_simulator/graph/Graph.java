@@ -138,8 +138,6 @@ public class Graph {
 	public static Graph generate1dKleinbergGraph(GraphParam param, Random rand, DegreeSource source) {
 		//TODO: Arguments list is cleaner, but this is a mess.
 		final int n = param.n;
-		final int q = param.q;
-		final int p = param.p;
 		final boolean fastGeneration = param.fastGeneration;
 
 		Graph g = new Graph(n);
@@ -664,8 +662,6 @@ public class Graph {
 	 */
 	public static void main(String[] args) {
 		int nNodes = 4000;
-		int p = 0;
-		int q = 6;
 
 		int nWalks = 10 * 1000 * 1000;
 		int nBuckets = 400;
@@ -678,7 +674,7 @@ public class Graph {
 		for (int trial = 0; trial < nTrials; trial++) {
 			System.out.println("Creating test graph...");
 			Random rand = new MersenneTwister(trial);
-			Graph g = generate1dKleinbergGraph(new GraphParam(nNodes, p, q, 0.0, 0.0, true), rand, new PoissonDegreeSource(12));
+			Graph g = generate1dKleinbergGraph(new GraphParam(nNodes, 0.0, 0.0, true), rand, new PoissonDegreeSource(12));
 			g.printGraphStats(true);
 			int[] uniformWalkDist;
 			int[] weightedWalkDist;

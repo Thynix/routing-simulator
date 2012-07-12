@@ -277,17 +277,14 @@ public class RoutingSim {
 			 * Size need not be specified if loading an existing graph, but the GraphParam constructor
 			 * enforces a minimum.
 			 */
-			cmd.hasOption("size") ? Integer.valueOf(cmd.getOptionValue("size")) : 2,
-			cmd.hasOption("local") ? Integer.valueOf(cmd.getOptionValue("local")) : 0,
-			cmd.hasOption("remote") ? Integer.valueOf(cmd.getOptionValue("remote")) : 0,
+			cmd.hasOption("size") ? Integer.valueOf(cmd.getOptionValue("size")) : 0,
 			cmd.hasOption("low-uptime") ? Double.valueOf(cmd.getOptionValue("low-uptime")) : 0,
 			cmd.hasOption("instant-reject") ? Double.valueOf(cmd.getOptionValue("instant-reject")) : 0,
 			cmd.hasOption("fast-generation"));
 
 		if (verbose) {
 			System.out.print("Generating graph of " + gp.n + " nodes, with ");
-			System.out.println("parameters p = " + gp.p + ", q = " + gp.q + ".");
-			System.out.print("pLowUptime = " + gp.pLowUptime + ", pInstantReject = " + gp.pInstantReject);
+			System.out.println("parameters pLowUptime = " + gp.pLowUptime + ", pInstantReject = " + gp.pInstantReject);
 			System.out.println(", fastGeneration = " + gp.fastGeneration);
 		}
 
@@ -381,11 +378,10 @@ public class RoutingSim {
 
 		if (!quiet) {
 			System.out.println("Average stats:");
-			System.out.print("p\tq\tpLow\tpInst\tfastGeneration\t");
+			System.out.print("pLow\tpInst\tfastGeneration\t");
 			Graph.printGraphStatsHeader();
 			System.out.println();
-			System.out.print(gp.p + "\t" + gp.q + "\t" + gp.pLowUptime + "\t" +
-				gp.pInstantReject + "\t" + gp.fastGeneration + "\t");
+			System.out.print(gp.pLowUptime + "\t" + gp.pInstantReject + "\t" + gp.fastGeneration + "\t");
 			//TODO: Why is this hardcoded to 13?
 			for (int j = 0; j < 13; j++) {
 				//TODO: Hard-coded dimensions bad.
