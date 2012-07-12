@@ -11,9 +11,9 @@ public class GraphParam {
 
 	public GraphParam(int n, double pLowUptime, double pInstantReject, boolean fastGeneration) {
 		if (pLowUptime < 0.0 || pLowUptime > 1.0)
-			throw new IllegalArgumentException("Probabilities are in [0,1].");
+			throw new IllegalArgumentException("Probabilities are in [0,1]; got " + pLowUptime + " .");
 		if (pInstantReject < 0.0 || pInstantReject > 1.0)
-			throw new IllegalArgumentException("Probabilities are in [0,1].");
+			throw new IllegalArgumentException("Probabilities are in [0,1]; got " + pInstantReject + ".");
 
 		this.n = n;
 		this.pLowUptime = pLowUptime;
