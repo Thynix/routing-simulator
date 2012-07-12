@@ -33,11 +33,6 @@ import java.util.Random;
  * Class to perform routing simulations on Graphs.
  */
 public class RoutingSim {
-	//E-series preferred numbers
-	//TODO: What are these for? Don't appear to be used.
-	public static final int[] Esix =    {	10,	15,	22,	33,	47,	68	};
-	public static final int[] Etwelve = {	10, 12, 15, 18, 22, 27, 33, 39, 47, 56, 68, 82	};
-
 	//generic output format
 	static final DecimalFormat outputFormat = new DecimalFormat("0.000000");
 
