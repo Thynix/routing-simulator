@@ -439,19 +439,26 @@ public class RoutingSim {
 		final int nTrials =(int)(30*(1/(1-0.99)));
 		final int nProbes = g.size();
 		System.out.println("Determining baseline");
-		int[] occurrences = new int[g.size()];
+		int[] baselineOccurances = new int[g.size()];
 		/*
 		 * Find baseline for visibility by selecting the same number of nodes from the entire network at random
-		 * as endpoints at each HTL.
+		 * as endpoints at each HTL. Sort occurrences each run, then add to final result array to represent
+		 * actual spread from each run and avoid node index influence.
 		 */
 		for (int i = 0; i < nTrials; i++) {
+			int[] trialOccurrences = new int[g.size()];
 			for (int walk = 0; walk < nProbes; walk++) {
-				occurrences[g.getNode(rand.nextInt(g.size())).index]++;
+				trialOccurrences[g.getNode(rand.nextInt(g.size())).index]++;
+			}
+			Arrays.sort(trialOccurrences);
+			assert baselineOccurances.length == trialOccurrences.length;
+			for (int j = 0; j < trialOccurrences.length; j++) {
+				baselineOccurances[j] += trialOccurrences[j];
 			}
 		}
 
 		output = new File(containingPath + "reference.dat");
-		writeArray(occurrences, output);
+		writeArray(baselineOccurances, output);
 
 		System.out.println("Simulating HTL");
 		//Find distribution of nodes reached with random walk for increasing hops from all nodes.
@@ -461,6 +468,7 @@ public class RoutingSim {
 		for (int nodeIndex = 0; nodeIndex < nTrials; nodeIndex++) {
 			SimpleNode source = g.getNode(rand.nextInt(g.size()));
 			SimpleNode alongTrace;
+			int[][] trialOccurrences = new int[maxHops + 1][g.size()];
 			for (int walk = 0; walk < nProbes; walk++) {
 				trace = source.randomWalkList(maxHops, uniform, rand);
 				//Traces: starting point (zero hops), then maxHops hops from there.
@@ -468,7 +476,15 @@ public class RoutingSim {
 				for (int fromEnd = 0; fromEnd <= maxHops; fromEnd++) {
 					//fromEnd of trace: hops along. 0 is starting node.
 					alongTrace = trace.get(fromEnd);
-					hopOccurrences[fromEnd][alongTrace.index]++;
+					trialOccurrences[fromEnd][alongTrace.index]++;
+				}
+			}
+			assert hopOccurrences.length == trialOccurrences.length;
+			for (int i = 0; i < trialOccurrences.length; i++) {
+				assert hopOccurrences[i].length == trialOccurrences[i].length;
+				Arrays.sort(trialOccurrences[i]);
+				for (int j = 0; j < trialOccurrences[i].length; j++) {
+					hopOccurrences[i][j] += trialOccurrences[i][j];
 				}
 			}
 		}
@@ -476,7 +492,6 @@ public class RoutingSim {
 		System.out.println("Sorting results.");
 		for (int hops = 0; hops <= maxHops; hops++) {
 			output = new File(containingPath + "probe-" + hops + ".dat");
-			Arrays.sort(hopOccurrences[hops]);
 			writeArray(hopOccurrences[hops], output);
 		}
 	}
