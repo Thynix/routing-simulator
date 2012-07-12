@@ -26,6 +26,10 @@ import java.util.Random;
 public class Graph {
 	private ArrayList<SimpleNode> nodes;
 	private double[] locations;
+	/**
+	 * Probability of not making a connection with a peer which has its desired degree.
+	 */
+	private static final double rejectProbability = 0.98;
 
 	/**
 	 * Private constructor; call one of the generator functions instead.
@@ -87,42 +91,13 @@ public class Graph {
 			g.nodes.get(node.index).index = node.index;
 		}
 
-		//Probability of not making a connection with a peer which has its desired degree.
-		final double rejectProbability = 0.98;
-		//TODO: Some way to get desired peer distributions cleanly? This is copy-paste from generate1dKleinbergGraph because it needs to drop out mid-loop.
-		//make far links
 		DistanceEntry[] distances = new DistanceEntry[param.n];
 		for (int i = 0; i < param.n; i++) {
 			WeightedDegreeNode src = (WeightedDegreeNode) g.nodes.get(i);
 			if (src.atDegree()) continue;
 			WeightedDegreeNode dest;
-			//TODO: fast generation forces ideal link length?
-			if (param.fastGeneration) {
-				//Continuous approximation to 1/d distribution; accurate in the large n case.
-				//Treats spacing as even, whether or not that is accurate.
-				//Assumes nodes are sorted in location order.
-				double maxSteps = param.n / 2.0;
-				while (!src.atDegree()) {
-					int steps = (int)Math.round(Math.pow(maxSteps, rand.nextDouble()));
-					assert steps >= 0 && steps <= param.n / 2;
-					int idx = rand.nextBoolean() ? i + steps : i - steps;
-					if (idx < 0) idx += param.n;
-					if (idx >= param.n) idx -= param.n;
-					dest = (WeightedDegreeNode)g.nodes.get(idx);
-					/* Reject if already connected, connection to self, if with high probability if
-					 * candidate peer has its desired degree
-					 */
-					if (idx == i || src.isConnected(dest) ||
-					    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;
-					src.connect(dest);
-				}
-			} else {
-				//Slow generation operates on exact node locations (even or otherwise).
-				//Does not require sorted node order.
-				//Precisely accurate even with uneven locations and small graph size.
 
-				//Find normalizing constant for this node
-				double norm = 0.0;
+				// Fill distance entry array.
 				for (int j = 0; j < param.n; j++) {
 					distances[j] = new DistanceEntry(Location.distance(src.getLocation(), g.nodes.get(j).getLocation()), j);
 				}
@@ -130,7 +105,7 @@ public class Graph {
 				//System.out.println("distances size is " + );
 				Arrays.sort(distances);
 
-				//Make q distant connections
+				// Make connections until at desired degree.
 				while (!src.atDegree()) {
 					double length = linkLengthSource.getLinkLength(rand);
 					int idx = Arrays.binarySearch(distances, new DistanceEntry(length, -1));
@@ -141,7 +116,6 @@ public class Graph {
 					    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;
 					src.connect(dest);
 				}
-			}
 		}
 
 		return g;

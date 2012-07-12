@@ -116,7 +116,7 @@ public class RoutingSim {
 		//TODO: Scale degree distribution (Also results?) to arbitrary network size - attempt to avoid distortion.
 		options.addOption("s", "size", true, "Number of nodes in the network. Currently ignored when using --degree unless --force-size is specified.");
 		//TODO: Does it make sense to use fastGeneration without evenSpacing? Assuming it doesn't.
-		options.addOption("f", "fast-generation", false, "If present, the simulator will assign locations with even spacing and take shortcuts to speed up graph generation.");
+		options.addOption("f", "fast-generation", false, "If present, the simulator will assign locations with even spacing and, when using --ideal-link, take shortcuts to speed up graph generation.");
 		options.addOption("G", "load-graph", true, "Path to load a saved graph from.");
 		options.addOption("g", "save-graph", true, "Path to save a graph after simulation is run on it.");
 
