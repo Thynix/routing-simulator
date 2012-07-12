@@ -11,6 +11,7 @@ import org.freenetproject.routing_simulator.graph.GraphParam;
 import org.freenetproject.routing_simulator.graph.degree.ConformingDegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.FixedDegreeSource;
+import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
 import org.freenetproject.routing_simulator.graph.linklength.ConformingLinkSource;
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
 import org.freenetproject.routing_simulator.graph.linklength.UniformLinkSource;
@@ -128,6 +129,7 @@ public class RoutingSim {
 		//Graphs: degree distribution
 		options.addOption("F", "fixed-degree", true, "All nodes are as close to the specified degree as practical.");
 		options.addOption("C", "conforming-degree", true, "Distribution conforming to a file. Takes a path to a degree distribution file of the format \"[degree] [number of occurrences]\\n\"");
+		options.addOption("i", "poisson-degree", true, "Distribution conforming to a Poisson distribution with the given mean.");
 
 		//Simulations: Routing policies
 		//TODO: But what do the various numbers actually mean?
@@ -310,10 +312,11 @@ public class RoutingSim {
 
 			DegreeSource degreeSource;
 			if (cmd.hasOption("conforming-degree")) degreeSource = new ConformingDegreeSource(cmd.getOptionValue("conforming-degree"), rand);
+			else if (cmd.hasOption("poisson-degree")) degreeSource = new PoissonDegreeSource(Integer.valueOf(cmd.getOptionValue("poisson-degree")));
 			else /*if (cmd.hasOption("fixed-degree"))*/ degreeSource = new FixedDegreeSource(Integer.valueOf(cmd.getOptionValue("fixed-degree")));
 
 			if (linkLengthSource == null) {
-				g = Graph.generate1dKleinbergGraph(gp, rand);
+				g = Graph.generate1dKleinbergGraph(gp, rand, degreeSource);
 			} else {
 				g = Graph.generateGraph(gp, rand, degreeSource, linkLengthSource);
 			}

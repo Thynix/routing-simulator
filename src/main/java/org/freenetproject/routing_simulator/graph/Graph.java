@@ -1,6 +1,7 @@
 package org.freenetproject.routing_simulator.graph;
 
 import org.freenetproject.routing_simulator.Request;
+import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
 import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
@@ -44,7 +45,7 @@ public class Graph {
 		locations = null;
 	}
 
-	private void generateNodes(GraphParam param, Random rand) {
+	private void generateNodes(GraphParam param, Random rand, DegreeSource source) {
 		locations = new double[param.n];
 		if (param.fastGeneration) {
 			for (int i = 0; i < param.n; i++) locations[i] = (1.0 * i) / param.n;
@@ -52,9 +53,11 @@ public class Graph {
 			for (int i = 0; i < param.n; i++) locations[i] = rand.nextDouble();
 		}
 
+		//TODO: Reason to sort if not fastGeneration?
 		Arrays.sort(locations);
 		for (int i = 0; i < param.n; i++) {
-			SimpleNode node = new SimpleNode(locations[i], rand.nextDouble() < param.pLowUptime, param.pInstantReject, rand);
+			//TODO: index in constructor
+			WeightedDegreeNode node = new WeightedDegreeNode(locations[i], rand.nextDouble() < param.pLowUptime, param.pInstantReject, rand, source.getDegree());
 			node.index = i;
 			nodes.add(node);
 		}
@@ -85,11 +88,7 @@ public class Graph {
 	 */
 	public static Graph generateGraph(GraphParam param, Random rand, DegreeSource degreeSource, LinkLengthSource linkLengthSource) {
 		Graph g = new Graph(param.n);
-		g.generateNodes(param, rand);
-		for (SimpleNode node : g.nodes) {
-			g.nodes.set(node.index, new WeightedDegreeNode(node.getLocation(), node.lowUptime(), param.pInstantReject, rand, degreeSource.getDegree()));
-			g.nodes.get(node.index).index = node.index;
-		}
+		g.generateNodes(param, rand, degreeSource);
 
 		DistanceEntry[] distances = new DistanceEntry[param.n];
 		for (int i = 0; i < param.n; i++) {
@@ -136,41 +135,29 @@ public class Graph {
 	 * @param rand Random number source used for initialization: locations and probabilities.
 	 * @return A Graph with the desired structure
 	 */
-	public static Graph generate1dKleinbergGraph(GraphParam param, Random rand) {
+	public static Graph generate1dKleinbergGraph(GraphParam param, Random rand, DegreeSource source) {
 		//TODO: Arguments list is cleaner, but this is a mess.
 		final int n = param.n;
 		final int q = param.q;
 		final int p = param.p;
-		final double pLowUptime = param.pLowUptime;
-		final double pInstantReject = param.pInstantReject;
 		final boolean fastGeneration = param.fastGeneration;
 
 		Graph g = new Graph(n);
 
 		//make nodes
-		g.generateNodes(param, rand);
-
-		//make adjacent links
-		for (int i = 0; i < n; i++) {
-			for (int j = 1; j <= p; j++) {
-				//Each node connects to the p nodes after it,
-				//and will be connected to by the p nodes before it.
-				int target = (i + j) % n;
-				g.nodes.get(i).connect(g.nodes.get(target));
-			}
-		}
+		g.generateNodes(param, rand, source);
 
 		//make far links
 		double[] sumProb = new double[n];
 		for (int i = 0; i < n; i++) {
-			SimpleNode src = g.nodes.get(i);
-			SimpleNode dest = null;
+			WeightedDegreeNode src = (WeightedDegreeNode)g.nodes.get(i);
+			WeightedDegreeNode dest;
 			if (fastGeneration) {
 				//Continuous approximation to 1/d distribution; accurate in the large n case.
 				//Treats spacing as even, whether or not that is accurate.
 				//Assumes nodes are sorted in location order.
 				double maxSteps = n / 2.0;
-				for (int j = 0; j < q; j++) {
+				while (!src.atDegree()) {
 					/*
 					 * The array is sorted by location and evenly spaced, so a change in index goes
 					 * a consistent distance away.
@@ -180,9 +167,9 @@ public class Graph {
 					int idx = rand.nextBoolean() ? i + steps : i - steps;
 					if (idx < 0) idx += n;
 					if (idx >= n) idx -= n;
-					dest = g.nodes.get(idx);
-					if (idx == i || src.isConnected(dest)) {
-						j--;
+					dest = (WeightedDegreeNode)g.nodes.get(idx);
+					if (idx == i || src.isConnected(dest)
+					    || (dest.atDegree() && rand.nextDouble() < rejectProbability)) {
 						continue;
 					}
 					src.connect(dest);
@@ -208,8 +195,7 @@ public class Graph {
 					if (j > 0) assert sumProb[j] >= sumProb[j-1];
 				}
 
-				/* Make q distant connections - */
-				for (int j = 0; j < q; j++) {
+				while (!src.atDegree()) {
 					/*
 					 * sumProb is a CDF, so to weight by it pick a "Y value" and find closest index.
 					 * norm is now the highest (and last) value in the CDF, so this is picking
@@ -238,9 +224,9 @@ public class Graph {
 					//Assert that this actually is the closest.
 					if (idx > 0) assert Math.abs(x - sumProb[idx]) < Math.abs(x - sumProb[idx - 1]);
 					if (idx < sumProb.length - 1) assert Math.abs(x - sumProb[idx]) < Math.abs(x - sumProb[idx + 1]);
-					dest = g.nodes.get(idx);
-					if (src == dest || src.isConnected(dest)) {
-						j--;
+					dest = (WeightedDegreeNode)g.nodes.get(idx);
+					if (src == dest || src.isConnected(dest)
+					    || (dest.atDegree() && rand.nextDouble() < rejectProbability)) {
 						continue;
 					}
 					src.connect(dest);
@@ -692,7 +678,7 @@ public class Graph {
 		for (int trial = 0; trial < nTrials; trial++) {
 			System.out.println("Creating test graph...");
 			Random rand = new MersenneTwister(trial);
-			Graph g = generate1dKleinbergGraph(new GraphParam(nNodes, p, q, 0.0, 0.0, true), rand);
+			Graph g = generate1dKleinbergGraph(new GraphParam(nNodes, p, q, 0.0, 0.0, true), rand, new PoissonDegreeSource(12));
 			g.printGraphStats(true);
 			int[] uniformWalkDist;
 			int[] weightedWalkDist;
