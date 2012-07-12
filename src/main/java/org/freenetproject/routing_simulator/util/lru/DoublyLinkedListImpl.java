@@ -519,7 +519,7 @@ public class DoublyLinkedListImpl<T extends DoublyLinkedList.Item<? extends T>> 
 	@Override
 	public Iterator<T> iterator() {
 		return new Iterator<T>() {
-			private Enumeration<T> e = forwardElements();
+			private final Enumeration<T> e = forwardElements();
 
 			@Override
 			public boolean hasNext() {

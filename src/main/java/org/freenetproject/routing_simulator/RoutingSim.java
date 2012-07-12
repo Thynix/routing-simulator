@@ -38,7 +38,7 @@ public class RoutingSim {
 	public static final int[] Etwelve = {	10, 12, 15, 18, 22, 27, 33, 39, 47, 56, 68, 82	};
 
 	//generic output format
-	static DecimalFormat outputFormat = new DecimalFormat("0.000000");
+	static final DecimalFormat outputFormat = new DecimalFormat("0.000000");
 
 	/**
 	 * Checks that a path is a directory which can be written to, and attempts to create it if it does not exist.

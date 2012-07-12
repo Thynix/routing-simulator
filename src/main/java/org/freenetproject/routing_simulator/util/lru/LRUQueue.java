@@ -106,7 +106,7 @@ public class LRUQueue<T> {
 
 	private class ItemEnumeration implements Enumeration<T> {
 
-		private Enumeration<QItem<T>> source = list.reverseElements();
+		private final Enumeration<QItem<T>> source = list.reverseElements();
 
 		@Override
 		public boolean hasMoreElements() {
@@ -120,7 +120,7 @@ public class LRUQueue<T> {
 	}
 
 	private static class QItem<T> extends DoublyLinkedListImpl.Item<QItem<T>> {
-		public T obj;
+		public final T obj;
 
 		public QItem(T obj) {
 			this.obj = obj;
