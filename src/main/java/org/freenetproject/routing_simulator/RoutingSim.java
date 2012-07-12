@@ -101,7 +101,6 @@ public class RoutingSim {
 		//Overall
 		options.addOption("D", "output-degree", true, "Output file for degree distribution.");
 		options.addOption("L", "output-link", true, "Output file for link length distribution.");
-		//TODO: Output routing simulation results to file
 		options.addOption("q", "quiet", false, "No simulation output to stdout. Messages about arguments are still output.");
 		options.addOption("v", "verbose", false, "Progress updates.");
 		options.addOption("h", "help", false, "Display this message.");
