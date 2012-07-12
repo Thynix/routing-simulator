@@ -20,7 +20,7 @@ public class WeightedDegreeNode extends SimpleNode {
 	 */
 	public WeightedDegreeNode(double location, boolean lowUptime, double pInstantReject, Random rand, int candidate) {
 		super(location, lowUptime, pInstantReject, rand);
-		if (candidate == 0) desiredDegree = 1;
+		if (candidate < 1) desiredDegree = 1;
 		else desiredDegree = candidate;
 	}
 
