@@ -741,18 +741,19 @@ public class RoutingSim {
 		int pct90 = a[((int)(a.length * 0.9))];
 		int pct97 = a[((int)(a.length * 0.97))];
 		int pct99 = a[((int)(a.length * 0.99))];
-		String s;
+		final StringBuilder summary = new StringBuilder();
 		if (verbose) {
-			s =		"Mean:			" + m + "\n";
-			s = s +		"Std Dev:		" + stdDev + "\n";
-			s = s +		"50th percentile:	" + pct50 + "\n";
-			s = s +		"90th percentile:	" + pct90 + "\n";
-			s = s +		"97th percentile:	" + pct97 + "\n";
-			s = s +		"99th percentile:	" + pct99 + "\n";
+			summary.append("Mean:").append(m).append("\n");
+			summary.append("Std Dev:").append(stdDev).append("\n");
+			summary.append("50th percentile:").append(pct50).append("\n");
+			summary.append("50th percentile:").append(pct50).append("\n");
+			summary.append("90th percentile:").append(pct90).append("\n");
+			summary.append("97th percentile:").append(pct97).append("\n");
+			summary.append("99th percentile:").append(pct99).append("\n");
 		} else {
-			s = m + "\t" + stdDev + "\t" + pct50 + "\t" + pct90 + "\t" + pct97 + "\t" + pct99 + "\t";
+			summary.append(m).append("\t").append(stdDev).append("\t").append(pct50).append("\t").append(pct90).append("\t").append(pct97).append("\t").append(pct99).append("\t");
 		}
-		return s;
+		return summary.toString();
 	}
 
 	public static double mean(int[] a) {
