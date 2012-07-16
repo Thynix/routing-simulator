@@ -215,18 +215,18 @@ public class RoutingSim {
 
 		//Check for problems with specified paths.
 		//Check if input files can be read.
-		if (cmd.hasOption("conforming-degree") && ! readableFile(cmd.getOptionValue("conforming-degree"))) return;
-		if (cmd.hasOption("conforming-link") && ! readableFile(cmd.getOptionValue("conforming-link"))) return;
-		if (cmd.hasOption("load-graph") && !readableFile(cmd.getOptionValue("load-graph"))) return;
+		if (cmd.hasOption("conforming-degree") && ! readableFile(cmd.getOptionValue("conforming-degree"))) System.exit(9);
+		if (cmd.hasOption("conforming-link") && ! readableFile(cmd.getOptionValue("conforming-link"))) System.exit(10);
+		if (cmd.hasOption("load-graph") && !readableFile(cmd.getOptionValue("load-graph"))) System.exit(11);
 
 		//Check if output paths are directories that can be written to, and create them if they do not exist.
-		if (cmd.hasOption("output-probe") && !writableDirectory(cmd.getOptionValue("output-probe"))) return;
+		if (cmd.hasOption("output-probe") && !writableDirectory(cmd.getOptionValue("output-probe"))) System.exit(12);
 
 		//Check that output files exist and are writable or can be created.
 		FileOutputStream degreeOutput = null, linkOutput = null;
 		final File graphOutput;
-		if (cmd.hasOption("output-degree") && (degreeOutput = writableFile(cmd.getOptionValue("output-degree"))) == null ) return;
-		if (cmd.hasOption("output-link") && (linkOutput = writableFile(cmd.getOptionValue("output-link"))) == null) return;
+		if (cmd.hasOption("output-degree") && (degreeOutput = writableFile(cmd.getOptionValue("output-degree"))) == null ) System.exit(13);
+		if (cmd.hasOption("output-link") && (linkOutput = writableFile(cmd.getOptionValue("output-link"))) == null) System.exit(14);
 		if (cmd.hasOption("save-graph")) {
 			graphOutput = new File(cmd.getOptionValue("save-graph"));
 			//Just check for this one; saving takes a File. Better to check here than after simulation runs.
