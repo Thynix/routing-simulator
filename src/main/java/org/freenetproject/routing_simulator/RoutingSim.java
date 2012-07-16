@@ -427,8 +427,9 @@ public class RoutingSim {
 			}
 		}
 
-		final int nTrials =(int)(30*(1/(1-0.99)));
-		final int nProbes = g.size();
+		//TODO: nTrials and nProbes configurable on command line.
+		final int nTrials = 100;
+		final int nProbes = g.size() * 30;
 		System.out.println("Determining baseline");
 		int[] baselineOccurrences = new int[g.size()];
 		/*
