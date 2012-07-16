@@ -71,7 +71,6 @@ public class RoutingSim {
 			return new FileOutputStream(new File(path));
 		} catch (FileNotFoundException e) {
 			System.out.println("Unable to open \"" + path + "\" for output:");
-			System.out.println(e);
 			e.printStackTrace();
 			return null;
 		}
