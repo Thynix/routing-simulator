@@ -656,8 +656,8 @@ public class RoutingSim {
 
 		//
 		int[] maxHopsToIntersect = null;
-		int[] pairedMaxHTI = null;
-		int[][] hopsToSink = null;
+		int[] pairedMaxHTI;
+		int[][] hopsToSink;
 		if (nIntersectTests > 1) {
 			maxHopsToIntersect = new int[nRequests];
 			pairedMaxHTI = new int[nRequests];
