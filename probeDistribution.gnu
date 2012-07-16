@@ -11,8 +11,9 @@ set xrange [0:]
 set title "Metropolis-Hastings Corrected Probe Distribution on Degree-Conforming Network"
 #set title "Probe Distribution"
 
-set xlabel "Node number"
+unset xtics
 set ylabel "Cumulative Appearances"
+unset ytics
 
 plot 'occurenceDistribution/reference.dat' title "Reference" s cumul,\
      'occurenceDistribution/probe-10.dat' title "10 HTL" s cumul,\
