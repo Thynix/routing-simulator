@@ -427,15 +427,6 @@ public class RoutingSim {
 			}
 		}
 
-		/* 13:05:40    evanbd | As a general rule, for well-behaved (meaning: basically normal) data, your percentiles will be valid up until you have
-		                      | around 30 points not included. So if you want a valid 99th percentile, you need to take 3000 data points.
-		   13:05:46    evanbd | Plus or minus a bunch.
-		   13:06:24    evanbd | This is a heuristic, not a rule; if you want a rule, you need to go put a confidence interval on your percentile, and that
-		                      | gets all complicated.
-		   13:07:02    evanbd | Note that the above number doesn't change much with network size.
-		   13:07:13    evanbd | 30*(1/1-0.99)
-		 */
-		//TODO: 0.99 is desired percentile - any concerns for validity of occurrence distribution?
 		final int nTrials =(int)(30*(1/(1-0.99)));
 		final int nProbes = g.size();
 		System.out.println("Determining baseline");
