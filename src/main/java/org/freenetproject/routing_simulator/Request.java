@@ -33,9 +33,6 @@ public class Request {
 	private int htl;
 	private double location;
 
-	private boolean done;
-	private boolean rnf;
-
 	private ArrayList<SimpleNode> path;
 	private boolean[][] sinks;
 	private int[] pathHTL;
@@ -71,8 +68,6 @@ public class Request {
 
 		htl = MAX_HTL;
 		this.location = location;
-		done = false;
-		rnf = false;
 		path = new ArrayList<SimpleNode>();
 		if (rand == null) {
 			this.rand = new Random();

@@ -737,7 +737,6 @@ public class RoutingSim {
 		double m = mean(a);
 		double stdDev = stdDev(a);
 		int pct50 = a[((int)(a.length * 0.5))];
-		int pct80 = a[((int)(a.length * 0.8))];
 		int pct90 = a[((int)(a.length * 0.9))];
 		int pct97 = a[((int)(a.length * 0.97))];
 		int pct99 = a[((int)(a.length * 0.99))];
