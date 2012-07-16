@@ -770,6 +770,10 @@ public class RoutingSim {
 		return Math.sqrt(variance(a));
 	}
 
+	/**
+	 * @param a
+	 * @return Whether the array is sorted in non-decreasing order.
+	 */
 	public static boolean isSorted(int[] a) {
 		for (int i = 0; i < a.length - 1; i++) if (a[i] > a[i+1]) return false;
 		return true;
