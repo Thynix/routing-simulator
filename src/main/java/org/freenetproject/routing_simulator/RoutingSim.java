@@ -439,7 +439,7 @@ public class RoutingSim {
 		final int nTrials =(int)(30*(1/(1-0.99)));
 		final int nProbes = g.size();
 		System.out.println("Determining baseline");
-		int[] baselineOccurances = new int[g.size()];
+		int[] baselineOccurrences = new int[g.size()];
 		/*
 		 * Find baseline for visibility by selecting the same number of nodes from the entire network at random
 		 * as endpoints at each HTL. Sort occurrences each run, then add to final result array to represent
@@ -451,14 +451,14 @@ public class RoutingSim {
 				trialOccurrences[g.getNode(rand.nextInt(g.size())).index]++;
 			}
 			Arrays.sort(trialOccurrences);
-			assert baselineOccurances.length == trialOccurrences.length;
+			assert baselineOccurrences.length == trialOccurrences.length;
 			for (int j = 0; j < trialOccurrences.length; j++) {
-				baselineOccurances[j] += trialOccurrences[j];
+				baselineOccurrences[j] += trialOccurrences[j];
 			}
 		}
 
 		output = new File(containingPath + "reference.dat");
-		writeArray(baselineOccurances, output);
+		writeArray(baselineOccurrences, output);
 
 		System.out.println("Simulating HTL");
 		//Find distribution of nodes reached with random walk for increasing hops from all nodes.
