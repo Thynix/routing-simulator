@@ -1,0 +1,81 @@
+#!/bin/bash
+
+# Exit if a command exits with an error.
+set -o errexit
+
+# Run paths and settings.
+cd "$(dirname $0)"
+scriptLocation=$(pwd)
+jar="$scriptLocation/target/routing_simulator-0.0.1-dev-jar-with-dependencies.jar"
+command="java -Xmx1000m -jar $jar"
+plotCommand="gnuplot"
+viewCommand="eog"
+
+# Test settings.
+testName="8k-folding"
+#intersect-tests are the number of tests to run per request (origin node).
+#1 for folding (request), 2 for routing (request and insert) performance.
+route="--route=3 --instant-reject=0 --low-uptime=0 --requests=1000 --intersect-tests=1"
+freenetFold="$route --fold-policy=FREENET"
+degree="--poisson-degree=12"
+size="8000"
+
+# Plotting commands
+plotLink="$plotCommand $scriptLocation/link_length.gnu"
+viewLink="$viewCommand plot_link_length.png"
+plotDegree="$plotCommand $scriptLocation/peer_dist.gnu"
+viewDegree="$viewCommand plot_peer_dist.png"
+
+# Test result locations.
+results="$scriptLocation/results"
+topology="$results/topology/$testName"
+routing="$results/routing/$testName"
+saveGraph="$scriptLocation/graphs/$testName"
+baseGraph="$saveGraph/ideal-base"
+flatGraph="$saveGraph/flat"
+
+for dir in "$topology" "$routing" "$saveGraph"
+do
+    mkdir -p "$dir"
+done
+
+## Generates starting graphs if they do not already exist.
+
+# Generate base graph
+if [[ ! -f "$baseGraph" ]];
+then
+    echo "Generating base graph."
+    $command --ideal-link "$degree" --size "$size" --save-graph "$baseGraph" --output-link "$topology/base-link" --output-degree "$topology/base-degree"
+else
+    echo "Base graph already exists; not generating."
+fi
+
+# Generate flat graph
+if [[ ! -f "$flatGraph" ]];
+then
+    echo "Generating flat graph."
+    # Degree is the same as in the base graph, so no need to output this degree too.
+    $command --flat-link "$degree" --size "$size" --save-graph "$flatGraph" --output-link "$topology/flat-link"
+else
+    echo "Flat graph already exists; not generating."
+fi
+
+## Fold on base
+echo "Folding on base."
+$command --load-graph "$baseGraph" $freenetFold --output-link "$topology/freenet-base-link" --output-degree "$topology/freenet-base-degree" --output-route "$routing/freenet-base"
+
+## Fold on flat
+echo "Folding on flat."
+$command --load-graph "$flatGraph" $freenetFold --output-link "$topology/freenet-flat-link" --output-degree "$topology/freenet-flat-degree"  --output-route "$routing/freenet-flat"
+
+## Plot results
+
+# Plotting uses relative paths
+ln -fsT "$scriptLocation/1407_links" "$topology/1407_links"
+
+cd "$topology"
+$plotLink
+$plotDegree
+$viewLink
+$viewDegree
+

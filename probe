@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# Exit if a command exits with an error.
+set -o errexit
+
+# Run paths and settings.
+jar="target/routing_simulator-0.0.1-dev-jar-with-dependencies.jar"
+graphLocation="/home/steve/Documents/Coding/freenet/simulator/simple_routing_simulator"
+command="java -Xmx4000m -jar $jar"
+graph="gnuplot $graphLocation/probeDistribution.gnu"
+viewGraph="eog probeDistribution.png"
+
+# Test settings.
+testName="conforming-probe"
+probes="--probe=50 --metropolis-hastings"
+degree="--conforming-degree=1407_peerDist"
+link="--conforming-link=1407_links"
+size="8000"
+
+# Test result locations.
+results="results"
+topology="$results/topology/$testName"
+probe="$results/probe/$testName"
+saveGraph="graphs/$testName"
+conformingGraph="$saveGraph/conforming"
+
+for dir in "$topology" "$probe" "$saveGraph"
+do
+    mkdir -p "$dir"
+done
+
+# Generates starting graphs if they do not already exist.
+
+# Generate base graph
+if [[ ! -f "$conformingGraph" ]]
+then
+    echo "Generating conforming graph."
+    $command --ideal-link "$degree" --size "$size" --save-graph "$conformingGraph" --output-link "$topology/conforming-link" --output-degree "$topology/conforming-degree"
+else
+    echo "Conforming graph already exists; not generating."
+fi
+
+# Simulate probes
+echo "Running probes."
+$command --load-graph "$conformingGraph" $probes --output-probe "$probe/"
+
+echo "Graphing."
+cd "$probe"
+$graph
+$viewGraph
+
