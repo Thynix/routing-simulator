@@ -126,7 +126,7 @@ public class RoutingSim {
 
 		//Simulations: Routing policies
 		//TODO: But what do the various numbers actually mean?
-		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --instant-reject, --low-uptime, --requests, --output-route, --intersect-tests, and --fold-policy be specified.");
+		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --instant-reject, --low-uptime, --requests, --output-route, --intersect-tests, --fold-policy, and --output-hops be specified.");
 		//TODO: Explain more on these - what are their effects?
 		options.addOption("q", "requests", true, "Number of requests to run.");
 		options.addOption("n", "intersect-tests", true, "Number of intersect tests per request: same target but random origin.");
@@ -134,6 +134,7 @@ public class RoutingSim {
 		options.addOption("I", "instant-reject", true, "Probability between 0.0 and 1.0 that a connection is instantly rejected.");
 		options.addOption("u", "low-uptime", true, "Probability between 0.0 and 1.0 that a node has low uptime.");
 		options.addOption("P", "fold-policy", true, "Path folding policy: NONE, FREENET, or SANDBERG");
+		options.addOption("H", "output-hops", true, "Base filename to output hop histograms for each sink policy. Appended with -<policy-num> for each.");
 
 		//Simulations: Probe distribution
 		options.addOption("p", "probe", true, "Simulate running probes from random locations for the specified number of maximum hops. Requires that --output-probe be specified.");
@@ -159,7 +160,7 @@ public class RoutingSim {
 			System.out.println("Quiet with verbose does not make sense.");
 			return;
 		}
-		if (cmd.hasOption("quiet") && !((cmd.hasOption("probe") && cmd.hasOption("output-probe")) || cmd.hasOption("output-degree") || cmd.hasOption("output-link") || cmd.hasOption("save-graph"))) {
+		if (cmd.hasOption("quiet") && !((cmd.hasOption("probe") && cmd.hasOption("output-probe")) || cmd.hasOption("output-degree") || cmd.hasOption("output-link") || cmd.hasOption("save-graph") || cmd.hasOption("route"))) {
 			System.out.println("Simulation will produce no output: --quiet is specified, but not any option which outputs to a file.");
 		}
 
@@ -182,8 +183,8 @@ public class RoutingSim {
 			return;
 		}
 
-		if (cmd.hasOption("route") && (!cmd.hasOption("requests") || !cmd.hasOption("intersect-tests") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime") || !cmd.hasOption("output-route") || !cmd.hasOption("fold-policy"))) {
-			System.out.println("--route was specified, but not one or more of its required parameters: --requests, --intersect-tests, --instant-reject, --low-uptime, --output-route, --fold-policy.");
+		if (cmd.hasOption("route") && (!cmd.hasOption("requests") || !cmd.hasOption("intersect-tests") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime") || !cmd.hasOption("output-route") || !cmd.hasOption("fold-policy") || !cmd.hasOption("output-hops"))) {
+			System.out.println("--route was specified, but not one or more of its required parameters: --requests, --intersect-tests, --instant-reject, --low-uptime, --output-route, --fold-policy, --output-hops.");
 			return;
 		}
 		if (cmd.hasOption("probe") && !cmd.hasOption("output-probe")) {
@@ -246,10 +247,15 @@ public class RoutingSim {
 			graphOutput = null;
 		}
 
-		int nRequests = cmd.hasOption("requests") ? Integer.valueOf(cmd.getOptionValue("requests")) : 4000;
-		int nIntersectTests = cmd.hasOption("intersect-tests") ? Integer.valueOf(cmd.getOptionValue("intersect-tests")) : 2;
 		//TODO: What is a sink policy? Looks like 2 is used as a hard-coded second dimension in Request, so this isn't currently a good configuration target.
 		int[] sinkPolsUsed = {0, 1};
+		PrintStream[] histogramOutput = new PrintStream[sinkPolsUsed.length];
+		for (int i = 0; i < sinkPolsUsed.length; i++) {
+			histogramOutput[i] = new PrintStream(writableFile(cmd.getOptionValue("output-hops")+ "-" + sinkPolsUsed[i]));
+		}
+
+		int nRequests = cmd.hasOption("requests") ? Integer.valueOf(cmd.getOptionValue("requests")) : 4000;
+		int nIntersectTests = cmd.hasOption("intersect-tests") ? Integer.valueOf(cmd.getOptionValue("intersect-tests")) : 2;
 		int routePol = cmd.hasOption("route") ? Integer.valueOf(cmd.getOptionValue("route")) : 3;
 		int maxHops = cmd.hasOption("probe") ? Integer.valueOf(cmd.getOptionValue("probe")) : 50;
 
@@ -332,7 +338,7 @@ public class RoutingSim {
 
 		if (cmd.hasOption("route")) {
 			rand = new MersenneTwister(seed);
-			simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose, cmd.getOptionValue("output-route"), pathFolding);
+			simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose, cmd.getOptionValue("output-route"), pathFolding, histogramOutput);
 		}
 
 		if (cmd.hasOption("output-degree")) {
@@ -489,7 +495,7 @@ public class RoutingSim {
 
 	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
 	                            int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, final String outputPath,
-	                            SimpleNode.PathFolding policy) {
+	                            SimpleNode.PathFolding policy, final PrintStream[] histogramOutput) {
 		File outputFile = new File(outputPath);
 		PrintStream stream = null;
 		try {
@@ -545,6 +551,7 @@ public class RoutingSim {
 		//Sink policy has no effect on routing decisions,
 		//so we compute all sink policies during one
 		//routing trial.
+		//TODO: Is there ever more than one sink policy?
 		for (int sp = 0; sp < sinkPolsUsed.length; sp++) {
 			int sinkPolicy = sinkPolsUsed[sp];
 			//TODO: "Hist" is history? Histogram?
@@ -552,7 +559,7 @@ public class RoutingSim {
 			int[] sinkHist = new int[sinkHistSize];
 			int[] lowUptimeSinkHist = new int[sinkHistSize];
 			int[] highUptimeSinkHist = new int[sinkHistSize];
-			int[] hopsHist = new int[50];
+			ArrayList<Integer> hopsHist = new ArrayList<Integer>(50);
 
 			double meanSinkCount = 0.0;
 			double meanLowUptimeSinkCount = 0.0;
@@ -578,10 +585,21 @@ public class RoutingSim {
 					lowUptimeSinkHist[nLowUptimeSinks]++;
 					highUptimeSinkHist[nHighUptimeSinks]++;
 
-					int nHops = Math.min(hopsHist.length - 1, r.hopsTaken());
-					hopsHist[nHops]++;
+					int nHops = r.hopsTaken();
+					// Expand histogram to make room for current value instead of clamping.
+					hopsHist.ensureCapacity(nHops + 1);
+					while (hopsHist.size() < nHops + 1) hopsHist.add(0);
+					hopsHist.set(nHops, hopsHist.get(nHops) + 1);
 				}
 			}
+
+			stream.println("Hops histogram for policy " + sinkPolicy + ":");
+
+			for (int i = 0; i < hopsHist.size(); i++) {
+				histogramOutput[sp].println(i + " " + hopsHist.get(i));
+			}
+			histogramOutput[sp].println();
+			histogramOutput[sp].flush();
 
 			//Before this means are just totals; divide by number of iterations above.
 			meanSinkCount /= nRequests * nIntersectTests;

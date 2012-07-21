@@ -7,15 +7,15 @@ set -o errexit
 cd "$(dirname $0)"
 scriptLocation=$(pwd)
 jar="$scriptLocation/target/routing_simulator-0.0.1-dev-jar-with-dependencies.jar"
-command="java -Xmx1000m -jar $jar"
+command="java -Xmx12000m -jar $jar"
 plotCommand="gnuplot"
 viewCommand="eog"
 
 # Test settings.
-testName="8k-folding"
+testName="8k-folding-lowrequest"
 #intersect-tests are the number of tests to run per request (origin node).
 #1 for folding (request), 2 for routing (request and insert) performance.
-route="--route=3 --instant-reject=0 --low-uptime=0 --requests=1000 --intersect-tests=1"
+route="--route=3 --instant-reject=0 --low-uptime=0 --requests=10000 --intersect-tests=1"
 freenetFold="$route --fold-policy=FREENET"
 degree="--poisson-degree=12"
 size="8000"
@@ -25,6 +25,8 @@ plotLink="$plotCommand $scriptLocation/link_length.gnu"
 viewLink="$viewCommand plot_link_length.png"
 plotDegree="$plotCommand $scriptLocation/peer_dist.gnu"
 viewDegree="$viewCommand plot_peer_dist.png"
+plotHops="$plotCommand $scriptLocation/hops_dist.gnu"
+viewHops="$viewCommand plot_hops_dist.png"
 
 # Test result locations.
 results="$scriptLocation/results"
@@ -62,20 +64,27 @@ fi
 
 ## Fold on base
 echo "Folding on base."
-$command --load-graph "$baseGraph" $freenetFold --output-link "$topology/freenet-base-link" --output-degree "$topology/freenet-base-degree" --output-route "$routing/freenet-base"
+$command --load-graph "$baseGraph" $freenetFold --output-link "$topology/freenet-base-link" --output-degree "$topology/freenet-base-degree" --output-route "$routing/freenet-base" --output-hops "$routing/freenet-base-hops-policy"
 
 ## Fold on flat
 echo "Folding on flat."
-$command --load-graph "$flatGraph" $freenetFold --output-link "$topology/freenet-flat-link" --output-degree "$topology/freenet-flat-degree"  --output-route "$routing/freenet-flat"
+$command --load-graph "$flatGraph" $freenetFold --output-link "$topology/freenet-flat-link" --output-degree "$topology/freenet-flat-degree"  --output-route "$routing/freenet-flat" --output-hops "$routing/freenet-flat-hops-policy"
 
 ## Plot results
 
 # Plotting uses relative paths
 ln -fsT "$scriptLocation/1407_links" "$topology/1407_links"
 
+# Plot
 cd "$topology"
 $plotLink
 $plotDegree
+cd "$routing"
+$plotHops
+
+# View
+cd "$topology"
 $viewLink
 $viewDegree
-
+cd "$routing"
+$viewHops
