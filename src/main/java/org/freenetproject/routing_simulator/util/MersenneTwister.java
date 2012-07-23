@@ -179,8 +179,8 @@ public class MersenneTwister extends java.util.Random implements Serializable, C
     public Object clone() throws CloneNotSupportedException
         {
         MersenneTwister f = (MersenneTwister)(super.clone());
-        f.mt = (int[])(mt.clone());
-        f.mag01 = (int[])(mag01.clone());
+        f.mt = mt.clone();
+        f.mag01 = mag01.clone();
         return f;
         }
 
@@ -598,7 +598,7 @@ public class MersenneTwister extends java.util.Random implements Serializable, C
         r = new MersenneTwister(SEED);
         for (j = 0; j < 1000; j++)
             {
-            System.out.print(r.nextBoolean((double)(j/999.0)) + " ");
+            System.out.print(r.nextBoolean(j/999.0) + " ");
             if (j%8==7) System.out.println();
             }
         if (!(j%8==7)) System.out.println();
@@ -607,7 +607,7 @@ public class MersenneTwister extends java.util.Random implements Serializable, C
         r = new MersenneTwister(SEED);
         for (j = 0; j < 1000; j++)
             {
-            System.out.print(r.nextBoolean((float)(j/999.0f)) + " ");
+            System.out.print(r.nextBoolean(j/999.0f) + " ");
             if (j%8==7) System.out.println();
             }
         if (!(j%8==7)) System.out.println();

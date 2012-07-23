@@ -841,7 +841,7 @@ public class RoutingSim {
 
 	public static double sumSquares(double[] a) {
 		double ss = 0.0;
-		for (int i = 0; i < a.length; i++) ss += ((double)a[i])*((double)a[i]);
+		for (int i = 0; i < a.length; i++) ss += a[i] * a[i];
 		return ss;
 	}
 
