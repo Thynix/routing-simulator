@@ -16,13 +16,11 @@ import java.util.Random;
  * A simple node model.  Has a location and a set of connections.
  */
 public class SimpleNode implements Serializable {
-	public static final int ROUTE_SUCCESS = 0;
-	public static final int ROUTE_RNF = 1;
-
 	private double location;
 	private ArrayList<SimpleNode> connections;
 	public Request lastRequest;
 	public boolean lowUptime;
+	public int desiredDegree;
 
 	private double pInstantReject;
 	private Random rand;
@@ -40,6 +38,7 @@ public class SimpleNode implements Serializable {
 		out.writeInt(index);
 		out.writeBoolean(lowUptime);
 		out.writeDouble(pInstantReject);
+		out.writeInt(desiredDegree);
 	}
 
 	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
@@ -51,6 +50,7 @@ public class SimpleNode implements Serializable {
 		pInstantReject = in.readDouble();
 		lruQueue = new LRUQueue<SimpleNode>();
 		ignoreLoc = new double[1];
+		desiredDegree = in.readInt();
 	}
 
 	public void setRand(Random rand) {
@@ -63,7 +63,7 @@ public class SimpleNode implements Serializable {
 	 * @param location The routing location of this node.
 	 * @param lowUptime Whether this is a low-uptime node
 	 */
-	public SimpleNode(double location, boolean lowUptime, double pInstantReject, Random rand) {
+	public SimpleNode(double location, boolean lowUptime, double pInstantReject, Random rand, int candidate) {
 		if (location < 0.0 || location >= 1.0)
 			throw new IllegalArgumentException("Location must be in [0,1).");
 
@@ -75,6 +75,15 @@ public class SimpleNode implements Serializable {
 		this.rand = rand;
 		index = -1;
 		lruQueue = new LRUQueue<SimpleNode>();
+		if (candidate < 1) desiredDegree = 1;
+		else desiredDegree = candidate;
+	}
+
+	/**
+	 * @return True if the node is at (or above) its desired degree.
+	 */
+	public boolean atDegree() {
+		return desiredDegree <= degree();
 	}
 
 	/**
@@ -277,15 +286,17 @@ distloop:
 		if (peer == this) return false;
 		// Do not path fold to a node which is already connected. TODO: Connections undirected - both should be true if either is.
 		if (this.connections.contains(peer) || peer.connections.contains(this)) return false;
-		if (rand.nextDouble() < (1.0 - acceptanceRate)) return false;
+		if ((atDegree() || !peer.atDegree()) && rand.nextDouble() < (1.0 - acceptanceRate)) return false;
 
 		// Disconnect from least, but restore invariant that both are in each other's LRU queues.
+		if (atDegree()) {
 		final SimpleNode least = lruQueue.pop();
 		if (least == null) return false;
 		lruQueue.pushLeast(least);
 
 		//checkInvariants(least, ConnectionState.CONNECTED);
 		disconnect(least);
+		}
 		//checkInvariants(least, ConnectionState.DISCONNECTED);
 
 		// Peers added via path folding are added to the end.

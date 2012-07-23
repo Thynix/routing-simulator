@@ -5,7 +5,6 @@ import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
 import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
-import org.freenetproject.routing_simulator.graph.node.WeightedDegreeNode;
 import org.freenetproject.routing_simulator.util.ArrayStats;
 import org.freenetproject.routing_simulator.util.MersenneTwister;
 
@@ -57,7 +56,7 @@ public class Graph {
 		Arrays.sort(locations);
 		for (int i = 0; i < param.n; i++) {
 			//TODO: index in constructor
-			WeightedDegreeNode node = new WeightedDegreeNode(locations[i], rand.nextDouble() < param.pLowUptime, param.pInstantReject, rand, source.getDegree());
+			SimpleNode node = new SimpleNode(locations[i], rand.nextDouble() < param.pLowUptime, param.pInstantReject, rand, source.getDegree());
 			node.index = i;
 			nodes.add(node);
 		}
@@ -92,9 +91,9 @@ public class Graph {
 
 		DistanceEntry[] distances = new DistanceEntry[param.n];
 		for (int i = 0; i < param.n; i++) {
-			WeightedDegreeNode src = (WeightedDegreeNode) g.nodes.get(i);
+			SimpleNode src = g.nodes.get(i);
 			if (src.atDegree()) continue;
-			WeightedDegreeNode dest;
+			SimpleNode dest;
 
 				// Fill distance entry array.
 				for (int j = 0; j < param.n; j++) {
@@ -110,7 +109,7 @@ public class Graph {
 					int idx = Arrays.binarySearch(distances, new DistanceEntry(length, -1));
 					if (idx < 0) idx = -1 - idx;
 					if (idx >= param.n) idx = param.n - 1;
-					dest = (WeightedDegreeNode)g.nodes.get(distances[idx].index);
+					dest = g.nodes.get(distances[idx].index);
 					if (src == dest || src.isConnected(dest) ||
 					    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;
 					src.connect(dest);
@@ -148,8 +147,8 @@ public class Graph {
 		//make far links
 		double[] sumProb = new double[n];
 		for (int i = 0; i < n; i++) {
-			WeightedDegreeNode src = (WeightedDegreeNode)g.nodes.get(i);
-			WeightedDegreeNode dest;
+			SimpleNode src = g.nodes.get(i);
+			SimpleNode dest;
 			if (fastGeneration) {
 				//Continuous approximation to 1/d distribution; accurate in the large n case.
 				//Treats spacing as even, whether or not that is accurate.
@@ -165,7 +164,7 @@ public class Graph {
 					int idx = rand.nextBoolean() ? i + steps : i - steps;
 					if (idx < 0) idx += n;
 					if (idx >= n) idx -= n;
-					dest = (WeightedDegreeNode)g.nodes.get(idx);
+					dest = g.nodes.get(idx);
 					if (idx == i || src.isConnected(dest)
 					    || (dest.atDegree() && rand.nextDouble() < rejectProbability)) {
 						continue;
@@ -222,7 +221,7 @@ public class Graph {
 					//Assert that this actually is the closest.
 					if (idx > 0) assert Math.abs(x - sumProb[idx]) < Math.abs(x - sumProb[idx - 1]);
 					if (idx < sumProb.length - 1) assert Math.abs(x - sumProb[idx]) < Math.abs(x - sumProb[idx + 1]);
-					dest = (WeightedDegreeNode)g.nodes.get(idx);
+					dest = g.nodes.get(idx);
 					if (src == dest || src.isConnected(dest)
 					    || (dest.atDegree() && rand.nextDouble() < rejectProbability)) {
 						continue;
