@@ -341,6 +341,25 @@ distloop:
 	}
 
 	/**
+	 * Rewires this node's shortcut to the endpoint. Expects every node to have only two outgoing connections:
+	 * its lattice connection and its shortcut. Assumes the lattice connection is the first; shortcut the second.
+	 * @param endpoint endpoint to fold to.
+	 * @return whether the fold was executed.
+	 */
+	private boolean offerShortcutFold(final SimpleNode endpoint, double acceptanceRate) {
+		// Do not path fold to self.
+		if (endpoint == this) return false;
+		// Do not path fold to a node which is already connected.
+		if (this.connections.contains(endpoint)) return false;
+		if (rand.nextDouble() < (1.0 - acceptanceRate)) return false;
+
+		disconnectOutgoing(connections.get(1));
+		connectOutgoing(endpoint);
+
+		return true;
+	}
+
+	/**
 	 * Folds with SANDBURG policy.
 	 * Offers a connection to the endpoint to every other node.
 	 * @param nodeChain  Nodes which make up the path the request has followed. First element is the origin of the
@@ -361,11 +380,24 @@ distloop:
 		}
 	}
 
+	private static void successSandbergDirected(final ArrayList<SimpleNode> nodeChain) {
+		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
+
+		final SimpleNode endpoint;
+		if (iterator.hasPrevious()) endpoint = iterator.previous();
+		else return;
+
+		while (iterator.hasPrevious()) {
+			iterator.previous().offerShortcutFold(endpoint, 0.07);
+		}
+	}
+
 	private static void success(final ArrayList<SimpleNode> nodeChain, PathFolding policy) {
 		switch (policy) {
 		case NONE: return;
 		case FREENET: successFreenet(nodeChain);
 		case SANDBERG: successSandberg(nodeChain);
+		case SANDBERG_DIRECTED: successSandbergDirected(nodeChain);
 		}
 	}
 
@@ -596,26 +628,26 @@ distloop:
 	}
 
 	/**
-	 * Disconnect from a node which is already connected to this one. As connections are
-	 * undirected, the other node also disconnects.
+	 * Disconnect in both directions from a node which is already connected to this one.
 	 * @param other node to disconnect from.
 	 */
 	public void disconnect(SimpleNode other) {
+		this.disconnectOutgoing(other);
+		other.disconnectOutgoing(this);
+	}
+
+	/**
+	 * Removes the connection going from this node to the given one.
+	 * @param other node to disconnect from.
+	 */
+	public void disconnectOutgoing(SimpleNode other) {
 		if (other == this)
 			throw new IllegalArgumentException("Cannot disconnect from self.");
-		if (!isConnected(other) || !other.isConnected(this))
+		if (!isConnected(other))
 			throw new IllegalArgumentException("Cannot disconnect: not connected.");
-
-		// Should be connected.
-		//checkInvariants(other, ConnectionState.CONNECTED);
 
 		connections.remove(other);
 		lruQueue.remove(other);
-		other.connections.remove(this);
-		other.lruQueue.remove(this);
-
-		// Now disconnected.
-		//checkInvariants(other, ConnectionState.DISCONNECTED);
 	}
 
 	/**

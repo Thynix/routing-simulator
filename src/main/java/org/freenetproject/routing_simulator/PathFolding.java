@@ -10,7 +10,11 @@ public enum PathFolding {
 	 */
 	FREENET,
 	/**
-	 * Path fold only between origin and endpoint with probability inverse of path length.
+	 * Path fold to endpoint only.
 	 */
-	SANDBERG
+	SANDBERG,
+	/**
+	 * Path fold to endpoint only with directed shortcut edges.
+	 */
+	SANDBERG_DIRECTED
 }
