@@ -134,7 +134,9 @@ public class RoutingSim {
 		options.addOption("o", "output-route", true, "File to which routing information is output.");
 		options.addOption("I", "instant-reject", true, "Probability between 0.0 and 1.0 that a connection is instantly rejected.");
 		options.addOption("u", "low-uptime", true, "Probability between 0.0 and 1.0 that a node has low uptime.");
-		options.addOption("P", "fold-policy", true, "Path folding policy: NONE, FREENET, or SANDBERG");
+		StringBuilder description = new StringBuilder("Path folding policy:");
+		for (PathFolding policy : PathFolding.values()) description.append(" ").append(policy);
+		options.addOption("P", "fold-policy", true,  description.toString());
 		options.addOption("H", "output-hops", true, "Base filename to output hop histograms for each sink policy. Appended with -<policy-num> for each.");
 
 		//Simulations: Probe distribution
@@ -198,21 +200,27 @@ public class RoutingSim {
 			return;
 		}
 
-		final SimpleNode.PathFolding pathFolding;
+		final PathFolding pathFolding;
 		if (cmd.hasOption("fold-policy")) {
 			try {
-				pathFolding = SimpleNode.PathFolding.valueOf(cmd.getOptionValue("fold-policy"));
+				pathFolding = PathFolding.valueOf(cmd.getOptionValue("fold-policy"));
 			} catch (IllegalArgumentException e) {
 				System.out.println("The folding policy \"" + cmd.getOptionValue("fold-policy") + "\" is invalid.");
 				System.out.println("Possible values are:");
-				for (SimpleNode.PathFolding policy : SimpleNode.PathFolding.values()) {
+				for (PathFolding policy : PathFolding.values()) {
 					System.out.println(policy.toString());
 				}
 				e.printStackTrace();
+				System.exit(15);
+				/*
+				 * Data flow analysis does not appear to take into account that System.exit() ends the
+				 * program, so the return is here to prevent pathFolding from being possibly
+				 * uninitialized.
+				 */
 				return;
 			}
 		} else {
-			pathFolding = SimpleNode.PathFolding.NONE;
+			pathFolding = PathFolding.NONE;
 		}
 
 		//Check for problems with specified paths.
@@ -502,7 +510,7 @@ public class RoutingSim {
 
 	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
 	                            int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, final String outputPath,
-	                            SimpleNode.PathFolding policy, final PrintStream[] histogramOutput) {
+	                            PathFolding policy, final PrintStream[] histogramOutput) {
 		File outputFile = new File(outputPath);
 		PrintStream stream = null;
 		try {

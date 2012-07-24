@@ -1,5 +1,6 @@
 package org.freenetproject.routing_simulator.graph.node;
 
+import org.freenetproject.routing_simulator.PathFolding;
 import org.freenetproject.routing_simulator.util.lru.LRUQueue;
 import org.freenetproject.routing_simulator.graph.Location;
 import org.freenetproject.routing_simulator.Request;
@@ -366,21 +367,6 @@ distloop:
 		case FREENET: successFreenet(nodeChain);
 		case SANDBERG: successSandburg(nodeChain);
 		}
-	}
-
-	public enum PathFolding {
-		/**
-		 * Do not perform path folding.
-		 */
-		NONE,
-		/**
-		 * Path fold with 7% acceptance - each node along the chain, multiple times.
-		 */
-		FREENET,
-		/**
-		 * Path fold only between origin and endpoint with probability inverse of path length.
-		 */
-		SANDBERG
 	}
 
 	/**
