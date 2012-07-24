@@ -522,16 +522,21 @@ public class RoutingSim {
 		stream.println("Routing " + nRequests * nIntersectTests + " requests, policy " + routePolicy + " on network of size " + g.size() + ".");
 		long startTime = System.currentTimeMillis();
 
+
+		for (int i = 0; i < nRequests; i++) {
+			final SimpleNode origin = g.getNode(rand.nextInt(g.size()));
+			origin.route(new Request(rand.nextDouble(), rand, routePolicy, false, g), null, policy);
+		}
 		//TODO: This is only used in 2D capacity in one line: can make 1D?
-		Request[][] requests = new Request[nRequests][nIntersectTests];
+		//Request[][] requests = new Request[nRequests][nIntersectTests];
 
 		//Separated into two loops so that the same set
 		//of requests are generated for each routing
 		//policy.
 		//This is why the instances of Random must be the same each run: comparability between routing schemes.
 		//TODO: Intersect means what?
-		int[][] requestOrigins = new int[nRequests][nIntersectTests];
-		for (int i = 0; i < nRequests; i++) {
+		//int[][] requestOrigins = new int[nRequests][nIntersectTests];
+		/*for (int i = 0; i < nRequests; i++) {
 			double l = rand.nextDouble();
 			//create multiple requests with same target location but different origin
 			for (int j = 0; j < nIntersectTests; j++) {
@@ -539,7 +544,7 @@ public class RoutingSim {
 				requests[i][j] = r;
 				requestOrigins[i][j] = rand.nextInt(g.size());
 			}
-		}
+
 
 		//Route all requests.
 		//TODO: What does route do?
@@ -686,7 +691,8 @@ public class RoutingSim {
 		}
 		stream.println();
 
-		//
+		*/
+		/*
 		int[] maxHopsToIntersect = null;
 		int[] pairedMaxHTI;
 		int[][] hopsToSink;
@@ -713,11 +719,12 @@ public class RoutingSim {
 							}
 						}
 					}
-				}
+				}*/
 				/*Only valid if doing precise routing
 				assert maxHopsToIntersect[i] >= 0;
 				assert pairedMaxHTI[i] >= 0;
 				*/
+		/*
 			}
 			Arrays.sort(maxHopsToIntersect);
 			stream.println("Max hops to intersection:");
@@ -734,17 +741,17 @@ public class RoutingSim {
 				stream.print(printArraySummary(hopsToSink[s], true));
 				stream.println();
 			}
-		}
+		}*/
 		stream.println("Time taken (ms): " + (System.currentTimeMillis() - startTime));
 		stream.print("Summary:\t" + g.size() + "\t" + g.nEdges() + "\t" + g.minDegree() + "\t");
 		stream.print(g.maxDegree() + "\t" + Math.sqrt(g.degreeVariance()) + "\t" + g.meanLocalClusterCoeff() + "\t");
-		stream.print(g.globalClusterCoeff() + "\t" + nRequests * nIntersectTests + "\t" + nPreciseRouted + "\t");
+		/*stream.print(g.globalClusterCoeff() + "\t" + nRequests * nIntersectTests + "\t" + nPreciseRouted + "\t");
 		stream.print(printArraySummary(decrements, false));
 		if (nIntersectTests > 1) {
 			System.out.print(printArraySummary(maxHopsToIntersect, false));
 		}
 		stream.println();
-		stream.println();
+		stream.println();*/
 		stream.println();
 	}
 
