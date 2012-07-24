@@ -346,7 +346,7 @@ distloop:
 	 * @param nodeChain  Nodes which make up the path the request has followed. First element is the origin of the
 	 *                   request; last is the endpoint.
 	 */
-	private static void successSandburg(final ArrayList<SimpleNode> nodeChain) {
+	private static void successSandberg(final ArrayList<SimpleNode> nodeChain) {
 		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
 
 		final SimpleNode endpoint;
@@ -365,7 +365,7 @@ distloop:
 		switch (policy) {
 		case NONE: return;
 		case FREENET: successFreenet(nodeChain);
-		case SANDBERG: successSandburg(nodeChain);
+		case SANDBERG: successSandberg(nodeChain);
 		}
 	}
 
