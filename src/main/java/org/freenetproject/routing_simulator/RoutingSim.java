@@ -113,6 +113,7 @@ public class RoutingSim {
 		options.addOption("f", "fast-generation", false, "If present, the simulator will assign locations with even spacing and, when using --ideal-link, take shortcuts to speed up graph generation.");
 		options.addOption("G", "load-graph", true, "Path to load a saved graph from.");
 		options.addOption("g", "save-graph", true, "Path to save a graph after simulation is run on it.");
+		options.addOption("s", "sandberg-graph", false, "Generate a directed graph with an edge from x to x -1 mod N for all x = 0 ... N - 1 as described in early section 2.2.1 in \"Searching in a Small World\".");
 
 		//Graphs: link length distribution
 		options.addOption("l", "ideal-link", false, "Kleinberg's ideal distribution: proportional to 1/d.");
@@ -178,7 +179,7 @@ public class RoutingSim {
 			System.out.println("Graph cannot be generated with multiple methods at once.");
 			return;
 		}
-		if (degreeOptions == 0 && linkOptions == 0 && ! cmd.hasOption("load-graph")) {
+		if (degreeOptions == 0 && linkOptions == 0 && !cmd.hasOption("load-graph") && !cmd.hasOption("sandberg-graph")) {
 			System.out.println("No graph generation method specified.");
 			return;
 		}
@@ -304,15 +305,21 @@ public class RoutingSim {
 			LinkLengthSource linkLengthSource;
 			if (cmd.hasOption("conforming-link")) linkLengthSource = new ConformingLinkSource(cmd.getOptionValue("conforming-link"));
 			else if (cmd.hasOption("ideal-link")) linkLengthSource = null;
-			else /*if (cmd.hasOptions("flat-link"))*/ linkLengthSource = new UniformLinkSource();
+			else if (cmd.hasOption("flat-link")) linkLengthSource = new UniformLinkSource();
+			else /* if (cmd.hasOption("sandberg-graph") */ linkLengthSource = null;
 
 			DegreeSource degreeSource;
 			if (cmd.hasOption("conforming-degree")) degreeSource = new ConformingDegreeSource(cmd.getOptionValue("conforming-degree"), rand);
 			else if (cmd.hasOption("poisson-degree")) degreeSource = new PoissonDegreeSource(Integer.valueOf(cmd.getOptionValue("poisson-degree")));
-			else /*if (cmd.hasOption("fixed-degree"))*/ degreeSource = new FixedDegreeSource(Integer.valueOf(cmd.getOptionValue("fixed-degree")));
+			else if (cmd.hasOption("fixed-degree")) degreeSource = new FixedDegreeSource(Integer.valueOf(cmd.getOptionValue("fixed-degree")));
+			else /* if (cmd.hasOption("sandberg-graph") */ degreeSource = null;
 
 			if (linkLengthSource == null) {
+				if (cmd.hasOption("sandberg-graph")) {
+					g = Graph.generateSandberg(gp, rand);
+				} else {
 				g = Graph.generate1dKleinbergGraph(gp, rand, degreeSource);
+				}
 			} else {
 				g = Graph.generateGraph(gp, rand, degreeSource, linkLengthSource);
 			}

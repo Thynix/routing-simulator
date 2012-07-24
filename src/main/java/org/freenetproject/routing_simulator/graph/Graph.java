@@ -1,6 +1,7 @@
 package org.freenetproject.routing_simulator.graph;
 
 import org.freenetproject.routing_simulator.Request;
+import org.freenetproject.routing_simulator.graph.degree.FixedDegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
 import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
@@ -76,6 +77,32 @@ public class Graph {
 		public int compareTo(DistanceEntry other) {
 			return Double.compare(this.distance, other.distance);
 		}
+	}
+
+	public static Graph generateSandberg(GraphParam param, Random rand) {
+		Graph g = new Graph(param.n);
+
+		DegreeSource source = new FixedDegreeSource(1337);
+		g.generateNodes(param, rand, source);
+
+		// Base graph: Edge from X to X - 1 mod N for all nodes 0 to N - 1.
+		for (int i = 0; i < param.n; i++) {
+			// Modulo of negative not defined: manually wrap.
+			int wrapped = i - 1;
+			if (wrapped < 0) wrapped += param.n;
+			g.getNode(i).connectOutgoing(g.getNode(wrapped));
+		}
+
+		// Shortcuts: Edges from each node to... TODO: random endpoint?
+		int other;
+		for (int i = 0; i < param.n; i++) {
+			do {
+				other = rand.nextInt(param.n);
+			} while (other == i || g.getNode(i).isConnected(g.getNode(other)));
+			g.getNode(i).connectOutgoing(g.getNode(other));
+		}
+
+		return g;
 	}
 
 	//TODO: Using GraphParam as an argument is beginning to smell: this takes additional arguments and ignores the number of close connections.

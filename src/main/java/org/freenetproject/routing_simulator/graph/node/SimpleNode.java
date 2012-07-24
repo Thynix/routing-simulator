@@ -575,7 +575,7 @@ distloop:
 	}
 
 	/**
-	 * Check whether a connection exists to a node.
+	 * Check whether a connection from this node to the other exists.
 	 *
 	 * @param other Node to check for connectivity
 	 * @return Whether a connection exists
@@ -585,28 +585,28 @@ distloop:
 	}
 
 	/**
-	 * Form a connection to a node.  Connections are undirected, so the
-	 * complementary connection is also formed.
+	 * Form a bidirectional connection to the given node.
 	 *
-	 * @param other Node to connect to
+	 * @param other Node to connect with.
 	 */
 	public void connect(SimpleNode other) {
+		this.connectOutgoing(other);
+		other.connectOutgoing(this);
+	}
+
+	/**
+	 * Form a one-way connection from this node to the given node.
+	 * @param other Node to connect to.
+	 */
+	public void connectOutgoing(SimpleNode other) {
 		if (other == this)
 			throw new IllegalArgumentException("Cannot connect to self.");
 		assert other != null;
-		if (isConnected(other) || other.isConnected(this))
+		if (isConnected(other))
 			throw new IllegalArgumentException("Cannot connect: already connected.");
-
-		// Should not be connected.
-		//checkInvariants(other, ConnectionState.DISCONNECTED);
 
 		connections.add(other);
 		lruQueue.push(other);
-		other.connections.add(this);
-		other.lruQueue.push(this);
-
-		// Now connected.
-		//checkInvariants(other, ConnectionState.CONNECTED);
 	}
 
 	/**
