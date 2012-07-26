@@ -525,7 +525,7 @@ public class RoutingSim {
 
 		for (int i = 0; i < nRequests; i++) {
 			final SimpleNode origin = g.getNode(rand.nextInt(g.size()));
-			origin.route(new Request(rand.nextDouble(), rand, routePolicy, false, g), null, policy);
+			origin.greedyRoute(rand.nextDouble(), 50, policy);
 		}
 		//TODO: This is only used in 2D capacity in one line: can make 1D?
 		//Request[][] requests = new Request[nRequests][nIntersectTests];

@@ -403,194 +403,49 @@ distloop:
 		}
 	}
 
-	/**
-	 * Route a request.  Routing policy is chosen by
-	 * <code>r.routePolicy</code>.
-	 *
-	 * @param r The request to route
-	 * @param origin the previous node in the chain.
-	 * @param folding path folding policy to use on success
-	 * @return Code indicating result
-	 */
-	public int route(final Request r, final SimpleNode origin, final PathFolding folding) {
-		return route(r, origin, folding, new ArrayList<SimpleNode>());
 	}
 
 	/**
-	 * Route a request.  Routing policy is chosen by
-	 * <code>r.routePolicy</code>.
+	 * Routes greedily from this node to the node at the target location. Stops when hopsToLive hits zero, or there
+	 * is no node closer than the local one. When that happens, it performs path folds with the specified policy.
 	 *
-	 * @param r The request to route
-	 * @param origin the previous node in the chain.
-	 * @return Code indicating result
+	 * @param target Location to route to.
+	 * @param hopsToLive Maximum number of additional hops.
+	 * @param folding Path folding policy to use on success.
 	 */
-	public int route(final Request r, final SimpleNode origin, final PathFolding folding, final ArrayList<SimpleNode> previousNodes) {
-		assert r.getHTL() <= Request.MAX_HTL;
-		assert r.getHTL() > 0;
-		assert !isLoop(r);
-		//the originating node didn't instant reject the request
-		if (origin != null && rand.nextDouble() < pInstantReject) {
-			return RESULT_INSTANT_REJECT;
-		}
-		previousNodes.add(this);
-		lastRequest = r;
-		r.handleArrival(this);
-		r.decrementHTL();
-		if (r.getHTL() == 0) {
-			//ran out of HTL; successfully routed.
-			//r.sink(this, isSink(r, routable, origin, destNode));
-			success(previousNodes, folding);
-			return RESULT_SUCCESS;
-		}
-
-		boolean[] routable = new boolean[connections.size()];
-		for (int i = 0; i < routable.length; i++) {
-			routable[i] = true;
-			if (origin != null && connections.get(i) == origin)
-				routable[i] = false;
-			if (connections.get(i) == null)
-				routable[i] = false;
-		}
-
-		while (true) {
-			int dest = routeTo(r, routable);
-			SimpleNode destNode;
-
-			if (dest == -1) {
-				destNode = null;
-			} else {
-				destNode = connections.get(dest);
-			}
-
-			r.sink(this, isSink(r, routable, origin, destNode));
-
-			if (dest == -1)
-				return RESULT_RNF;
-			assert destNode != null;
-
-			if (destNode.isLoop(r)) {
-				routable[dest] = false;
-				r.decrementHTL();
-				if (r.getHTL() == 0) {
-					//r.sink(this, isSink(r, routable, origin, destNode));
-					return RESULT_SUCCESS;
-				}
-				continue;
-			}
-
-			int routeResult = destNode.route(r, this, folding, previousNodes);
-			if (routeResult == RESULT_SUCCESS) {
-				success(previousNodes, folding);
-				return RESULT_SUCCESS;
-			} else if (routeResult == RESULT_RNF || routeResult == RESULT_INSTANT_REJECT) {
-				routable[dest] = false;
-			} else {
-				assert false;
-			}
-
-			if (r.getHTL() == 0) {
-				//ran out of HTL while routing here or downstream (ie downstream RNF)
-				success(previousNodes, folding);
-				return RESULT_SUCCESS;
-			}
-		}
+	public void greedyRoute(final double target, int hopsToLive, final PathFolding folding) {
+		greedyRoute(target, hopsToLive, folding, new ArrayList<SimpleNode>());
 	}
 
-	/**
-	 * Get the node that the request will be routed to.
-	 *
-	 * @param r The request to be routed
-	 * @param routable Which of the connections we have should be considered routable
-	 * @return The index of the node that is to be routed to next
-	 */
-	private int routeTo(Request r, boolean[] routable) {
-		if (routable == null || routable.length != connections.size())
-			throw new IllegalArgumentException();
+	private void greedyRoute(final double target, int hopsToLive, final PathFolding folding, final ArrayList<SimpleNode> chain) {
+		if (hopsToLive <= 0) throw new IllegalStateException("hopsToLive must be positive. It is " + hopsToLive);
+		// Find node closest to target. Start out assuming this node is the closest.
+		SimpleNode next = this;
+		double closest = distanceToLoc(target);
 
-		if (r.routePolicy >= 0 && r.routePolicy <= 6) {
-			SimpleNode bestNode = null;
-			int bestIdx = -1;
-			double bestDist = 1.0;
-			double bestLocalDist = 1.0;
-			double myDist = distanceToLoc(r);
-
-			if (r.routePolicy >= 3) {
-				//loop fix
-				if (ignoreLoc.length < connections.size() + 1) {
-					ignoreLoc = new double[connections.size() + 1];
-				}
-				for (int i = 0; i < connections.size(); i++) {
-					if (routable[i]) {
-						ignoreLoc[i] = -1.0;
-					} else {
-						ignoreLoc[i] = connections.get(i).location;
-					}
-				}
-				ignoreLoc[ignoreLoc.length - 1] = location;
+		// Check peer distances.
+		for (SimpleNode peer : connections) {
+			double distance = peer.distanceToLoc(target);
+			if (distance < closest) {
+				next = peer;
+				closest = distance;
 			}
+		}
 
-			for (int i = 0; i < connections.size(); i++) {
-				if (!routable[i]) continue;
-				SimpleNode target = connections.get(i);
-				if (target == null) continue;
-				double dist = 1.0;
-				double localDist = target.distanceToLoc(r);
-				double foafDist = 1.0;
-				if (r.routePolicy == 0) {
-				} else if (r.routePolicy == 1 || r.routePolicy == 2) {
-					foafDist = target.minFOAFDist(r, null);
-				} else if (r.routePolicy >= 3) {
-					foafDist = target.minFOAFDist(r, ignoreLoc);
-				} else {
-					assert false;
-				}
+		// Local node is the closest. Dead end - success.
+		if (next == this) {
+			success(chain, folding);
+			return;
+		}
 
-				if (r.routePolicy == 0) {
-					dist = localDist;
-				} else if (r.routePolicy == 1 || r.routePolicy == 2 || r.routePolicy == 3) {
-					dist = foafDist;
-				} else if (r.routePolicy == 4 || r.routePolicy == 5 || r.routePolicy == 6) {
-					assert localDist >= foafDist;
-					assert myDist != foafDist;
-					if (myDist < foafDist) {
-						dist = foafDist;
-					} else {
-						double p = 1.0;
-						if (r.routePolicy == 4) {
-							p = 3.0 / 6.0;
-						} else if (r.routePolicy == 5) {
-							p = 4.0 / 6.0;
-						} else if (r.routePolicy == 6) {
-							p = 5.0 / 6.0;
-						} else {
-							assert false;
-						}
-						dist = Math.pow(localDist, 1.0 - p) * Math.pow(foafDist, p);
-					}
-				} else {
-					assert false;
-				}
-				if (dist < bestDist) {
-					bestDist = dist;
-					bestNode = target;
-					bestIdx = i;
-					bestLocalDist = localDist;
-				} else if ((r.routePolicy >= 2) && dist == bestDist) {
-					if (localDist < bestLocalDist) {
-						bestLocalDist = localDist;
-						bestIdx = i;
-						bestNode = target;
-					}
-				} else {
-				}
-			}
+		//TODO: Probabilistic decrement
+		hopsToLive--;
 
-			if (bestNode == null) return -1;
-			assert bestDist <= 0.5 && bestDist >= 0.0;
-			assert bestIdx >= 0;
-			return bestIdx;
+		if (hopsToLive == 0) {
+			success(chain, folding);
 		} else {
-			return -1;
+			chain.add(this);
+			next.greedyRoute(target, hopsToLive, folding, chain);
 		}
 	}
 
