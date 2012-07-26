@@ -331,8 +331,6 @@ public class SimpleNode implements Serializable {
 
 		connections.remove(other);
 		lruQueue.remove(other);
-		other.connections.remove(this);
-		other.lruQueue.remove(this);
 	}
 
 	/**
