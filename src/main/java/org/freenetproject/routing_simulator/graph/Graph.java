@@ -421,22 +421,20 @@ public class Graph {
 		};
 	}
 
-	/**Edge length distribution*/
-	public double[] edgeLengths() {
-		int nEdges = nEdges();
-		double[] lengths = new double[nEdges];
-		int e = 0;
-		for (int i = 0; i < nodes.size(); i++) {
-			SimpleNode node = nodes.get(i);
-			assert node.index == i;
-			ArrayList<SimpleNode> conn = node.getConnections();
-			for (int j = 0; j < conn.size(); j++) {
-				if (conn.get(j).index < i) continue;
-				assert conn.get(j).index != i;
-				lengths[e++] = node.distanceToLoc(conn.get(j).getLocation());
+	/**
+	 * Edge length distribution. Treats edges as directed.
+	 *
+	 * @param includeLatticeLinks If true, links from a node at index X to X - 1 mod N will be included. If false
+	 *                            they will not.
+	 */
+	public ArrayList<Double> edgeLengths(final boolean includeLatticeLinks) {
+		ArrayList<Double> lengths = new ArrayList<Double>();
+		for (SimpleNode node : nodes) {
+			for (SimpleNode peer : node.getConnections()) {
+				if (!includeLatticeLinks && node.index == (peer.index + 1) % size()) continue;
+				lengths.add(node.distanceToLoc(peer.getLocation()));
 			}
 		}
-		assert e == nEdges;
 		return lengths;
 	}
 

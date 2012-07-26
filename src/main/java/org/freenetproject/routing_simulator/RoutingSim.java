@@ -100,6 +100,7 @@ public class RoutingSim {
 		//Overall
 		options.addOption("D", "output-degree", true, "Output file for degree distribution.");
 		options.addOption("L", "output-link", true, "Output file for link length distribution.");
+		options.addOption("I", "include-lattice", false, "Include links from index X to X - 1 mod N when outputting link lengths. If the graph does not actually have lattice connections this is recommended.");
 		options.addOption("q", "quiet", false, "No simulation output to stdout. Messages about arguments are still output.");
 		options.addOption("v", "verbose", false, "Progress updates.");
 		options.addOption("h", "help", false, "Display this message.");
@@ -374,9 +375,9 @@ public class RoutingSim {
 		}
 
 		if (cmd.hasOption("output-link")) {
-			double[] lengths = g.edgeLengths();
+			ArrayList<Double> lengths = g.edgeLengths(cmd.hasOption("include-lattice"));
 			//Output is intended for gnuplot CDF - second value is Y and should sum to 1.
-			double normalized = 1.0/lengths.length;
+			double normalized = 1.0/lengths.size();
 			for (double length : lengths) {
 				try {
 					linkOutput.write((length + " " + normalized + "\n").getBytes());
