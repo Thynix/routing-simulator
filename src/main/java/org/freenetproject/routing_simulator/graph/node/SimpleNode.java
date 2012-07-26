@@ -3,7 +3,6 @@ package org.freenetproject.routing_simulator.graph.node;
 import org.freenetproject.routing_simulator.PathFolding;
 import org.freenetproject.routing_simulator.util.lru.LRUQueue;
 import org.freenetproject.routing_simulator.graph.Location;
-import org.freenetproject.routing_simulator.Request;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -19,11 +18,8 @@ import java.util.Random;
 public class SimpleNode implements Serializable {
 	private double location;
 	private ArrayList<SimpleNode> connections;
-	public Request lastRequest;
-	public boolean lowUptime;
 	public int desiredDegree;
 
-	private double pInstantReject;
 	private Random rand;
 
 	/**Index of this node in the graph; purely for convenience, not used in any decision making.*/
@@ -31,14 +27,9 @@ public class SimpleNode implements Serializable {
 
 	private LRUQueue<SimpleNode> lruQueue;
 
-	//Not in routeTo in order to reduce GC thrash
-	double[] ignoreLoc = new double[1];
-
 	private void writeObject(ObjectOutputStream out) throws IOException {
 		out.writeDouble(location);
 		out.writeInt(index);
-		out.writeBoolean(lowUptime);
-		out.writeDouble(pInstantReject);
 		out.writeInt(desiredDegree);
 	}
 
@@ -47,10 +38,7 @@ public class SimpleNode implements Serializable {
 		//Connections must be initialized later from the network view where other nodes are visible.
 		connections = new ArrayList<SimpleNode>();
 		index = in.readInt();
-		lowUptime = in.readBoolean();
-		pInstantReject = in.readDouble();
 		lruQueue = new LRUQueue<SimpleNode>();
-		ignoreLoc = new double[1];
 		desiredDegree = in.readInt();
 	}
 
@@ -62,17 +50,15 @@ public class SimpleNode implements Serializable {
 	 * Public constructor.
 	 *
 	 * @param location The routing location of this node.
-	 * @param lowUptime Whether this is a low-uptime node
+	 * @param rand Used for random numbers in decision making.
+	 * @param candidate Desired degree of the node. TODO: change name to desiredDegree
 	 */
-	public SimpleNode(double location, boolean lowUptime, double pInstantReject, Random rand, int candidate) {
+	public SimpleNode(double location, Random rand, int candidate) {
 		if (location < 0.0 || location >= 1.0)
 			throw new IllegalArgumentException("Location must be in [0,1).");
 
 		this.location = location;
 		connections = new ArrayList<SimpleNode>();
-		lastRequest = null;
-		this.lowUptime = lowUptime;
-		this.pInstantReject = pInstantReject;
 		this.rand = rand;
 		index = -1;
 		lruQueue = new LRUQueue<SimpleNode>();
@@ -98,65 +84,6 @@ public class SimpleNode implements Serializable {
 		return Location.distance(location, l);
 	}
 
-	/**
-	 * Get the routing distance to a request location.
-	 *
-	 * @param r Request to compute distance of
-	 * @return The circular routing distance
-	 * @see Location distance
-	 */
-	public double distanceToLoc(Request r) {
-		return distanceToLoc(r.getLocation());
-	}
-
-	/**
-	 * Compute the minimum FOAF distance to a location.
-	 * That is, the minimum distance of this node, or any of its peers, to
-	 * that location; used for FOAF (Friend of a Friend) routing modes.
-	 *
-	 * @param l The location to compute the distance to
-	 * @param ignoreLoc Any peers with locations exactly equal to these
-	 * are ignored
-	 * @return The minimum distance of the location to us or a peer
-	 */
-	public double minFOAFDist(double l, double[] ignoreLoc) {
-		double d = distanceToLoc(l);
-distloop:
-		for (int i = 0; i < connections.size(); i++) {
-			if (ignoreLoc != null) {
-				double peerLoc = connections.get(i).location;
-				for (int j = 0; j < ignoreLoc.length; j++) {
-					if (peerLoc == ignoreLoc[j]) {
-						continue distloop;
-					}
-				}
-			}
-			d = Math.min(d, connections.get(i).distanceToLoc(l));
-		}
-		return d;
-	}
-
-	/**
-	 * Compute the minimum FOAF distance to a request.
-	 *
-	 * @param r The request to compute distance for
-	 * @return Minimum FOAF distance
-	 */
-	public double minFOAFDist(Request r) {
-		return minFOAFDist(r.getLocation(), null);
-	}
-
-	/**
-	 * Compute the minimum FOAF distance to a request, with ignore
-	 * locations.
-	 *
-	 * @param r The request to compute distance for
-	 * @param ignoreLoc Set of locations to ignore
-	 * @return Minimum FOAF distance
-	 */
-	public double minFOAFDist(Request r, double[] ignoreLoc) {
-		return minFOAFDist(r.getLocation(), ignoreLoc);
-	}
 
 	/**
 	 * Get the location of this node.
@@ -166,113 +93,6 @@ distloop:
 	public double getLocation() {
 		return location;
 	}
-
-	/** Set the location of this node.*/
-	public void setLocation(double location) {
-		if (location < 0.0 || location >= 1.0)
-			throw new IllegalArgumentException("Invalid location");
-
-		this.location = location;
-	}
-
-	/**
-	 * Get whether this is a low uptime node.  This is used in sink
-	 * decisions, but not routing decisions.
-	 *
-	 * @return True iff this is a low uptime node
-	 */
-	public boolean lowUptime() {
-		return lowUptime;
-	}
-
-	/**
-	 * Determine which sink policies this node will sink the data under.
-	 * All policies only sink at low HTL, to protect privacy of inserters.
-	 * Policy 0: Current Freenet (build 1234) policy.  Sink if we have a
-	 * better location than all our high-uptime peers, ignoring routing
-	 * decisions.
-	 * Policy 1: evand's proposed change: sink if we have a better
-	 * location than both the origin and destination, where low uptime
-	 * (or null) nodes are considered to have bad locations.
-	 *
-	 * @param r The request in question
-	 * @param routable Which of this node's peers are routable
-	 * @param origin The node that this request came to us from; null for
-	 * locally originated requests
-	 * @param dest The node that this request will be routed to; null if
-	 * the request will not be routed onward (HTL == 0, RNF, etc)
-	 * @return An array indicating which policies sink the data
-	 */
-	protected boolean[] isSink(Request r, boolean[] routable, SimpleNode origin, SimpleNode dest) {
-		boolean[] result = new boolean[Request.SINK_POLICIES];
-
-		if (r.getHTL() > Request.MAX_STORE_HTL) {
-			for (int i = 0; i < result.length; i++) result[i] = false;
-			return result;
-		}
-
-		//current Freenet sink policy (build 1233)
-		double myDist = distanceToLoc(r.getLocation());
-		double minDist = 1.0;
-		for (int i = 0; i < connections.size(); i++) {
-			if (connections.get(i) == null) continue;
-			double d = connections.get(i).distanceToLoc(r.getLocation());
-			if (!connections.get(i).lowUptime() && d < minDist)
-				minDist = d;
-		}
-		result[0] = myDist <= minDist;
-
-		//proposed new sink policy
-		minDist = 1.0;
-		if (origin != null && !origin.lowUptime())
-			minDist = Math.min(minDist, origin.distanceToLoc(r));
-		if (dest != null && !dest.lowUptime())
-			minDist = Math.min(minDist, dest.distanceToLoc(r));
-		result[1] = myDist <= minDist;
-
-		return result;
-	}
-
-	/**
-	 * Whether this node has already handled this request.  Only the most
-	 * recently routed request is tracked, so loop detection will not work
-	 * if multiple requests are on the network at the same time.
-	 *
-	 * @param r Request to check for routing loops
-	 * @return Whether this node has already handled the request
-	 */
-	public boolean isLoop(Request r) {
-		return (r == lastRequest);
-	}
-
-	/** Return code indicating that routing succeeded. */
-	public static final int RESULT_SUCCESS = 0;
-	/** Return code indicating that routing was unable to find a destination. */
-	public static final int RESULT_RNF = 1;
-	public static final int RESULT_INSTANT_REJECT = 2;
-
-	/*private enum ConnectionState {
-		CONNECTED,
-		DISCONNECTED
-	}*/
-
-	/**
-	 * Check that invariants hold between this node and the given. For debugging.
-	 * @param other Other node to check this node's relationship with.
-	 * @param connected Whether the two should be connected or not.
-	 */
-	/*private void checkInvariants(SimpleNode other, ConnectionState connected) {
-		switch (connected) {
-		case CONNECTED:
-			assert lruQueue.contains(other) && other.lruQueue.contains(this);
-			assert isConnected(other) && other.isConnected(this);
-			break;
-		case DISCONNECTED:
-			assert !lruQueue.contains(other) && !other.lruQueue.contains(this);
-			assert !isConnected(other) && !other.isConnected(this);
-			break;
-		}
-	}*/
 
 	/**
 	 * Called to offer a connection between the specified peer and this one during path folding.
@@ -403,6 +223,12 @@ distloop:
 		}
 	}
 
+	public double[] getLinkLengths() {
+		double[] lengths = new double[connections.size()];
+		for (int i = 0; i < connections.size(); i++) {
+			lengths[i] = distanceToLoc(connections.get(i).getLocation());
+		}
+		return lengths;
 	}
 
 	/**
@@ -505,6 +331,8 @@ distloop:
 
 		connections.remove(other);
 		lruQueue.remove(other);
+		other.connections.remove(this);
+		other.lruQueue.remove(this);
 	}
 
 	/**

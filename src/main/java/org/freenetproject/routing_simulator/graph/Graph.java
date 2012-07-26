@@ -1,6 +1,5 @@
 package org.freenetproject.routing_simulator.graph;
 
-import org.freenetproject.routing_simulator.Request;
 import org.freenetproject.routing_simulator.graph.degree.FixedDegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
@@ -57,7 +56,7 @@ public class Graph {
 		Arrays.sort(locations);
 		for (int i = 0; i < param.n; i++) {
 			//TODO: index in constructor
-			SimpleNode node = new SimpleNode(locations[i], rand.nextDouble() < param.pLowUptime, param.pInstantReject, rand, source.getDegree());
+			SimpleNode node = new SimpleNode(locations[i], rand, source.getDegree());
 			node.index = i;
 			nodes.add(node);
 		}
@@ -570,74 +569,6 @@ public class Graph {
 		}
 
 		return ((double)(nClosed)) / ((double)(nTotal));
-	}
-
-	/**
-	 * Determine whether a request was routed to its optimal location.
-	 *
-	 * @param r Request to check for precise routing
-	 * @return Whether the request was precisely routed
-	 */
-	public boolean preciseRoute(Request r) {
-		//Even spacing only version:
-		//return r.minDist() <= (1.0 / (nodes.size() * 2.0));
-		int idx = Arrays.binarySearch(locations, r.getLocation());
-		if (idx < 0) idx = -1 - idx;
-		int pre = idx - 1;
-		if (pre == -1) pre = locations.length - 1;
-		if (idx == locations.length) idx = 0;
-		return r.minDist() <= Location.distance(r.getLocation(), locations[pre])
-			&& r.minDist() <= Location.distance(r.getLocation(), locations[idx]);
-	}
-
-	/**
-	 * Randomize the locations of the nodes prior to swapping etc.
-	 *
-	 * @param rand The source of randomness to use
-	 * @param evenSpacing Whether the locations should be evenly spaced
-	 */
-	public void randomizeLocations(Random rand, boolean evenSpacing) {
-		double[] newLocations = new double[size()];
-		if (evenSpacing) {
-			for (int i = 0; i < newLocations.length; i++) {
-				newLocations[i] = ((double)(i)) / newLocations.length;
-			}
-			shuffle(newLocations, rand);
-		} else {
-			for (int i = 0; i < newLocations.length; i++) {
-				newLocations[i] = rand.nextDouble();
-			}
-		}
-		setLocations(newLocations);
-	}
-
-	/**
-	 * Set locations for the nodes in this Graph.
-	 *
-	 * @param newLocations The set of new locations
-	 */
-	public void setLocations(double[] newLocations) {
-		if (newLocations.length != size())
-			throw new IllegalArgumentException("Wrong location count.");
-		for (int i = 0; i < newLocations.length; i++) {
-			nodes.get(i).setLocation(newLocations[i]);
-		}
-	}
-
-	/**
-	 * Knuth shuffle an array.
-	 *
-	 * @param a The array to shuffle
-	 * @param rand The randomness source to use
-	 */
-	public static void shuffle(double[] a, Random rand) {
-		for (int i = 0; i < a.length; i++) {
-			int j = i + rand.nextInt(a.length - i);
-			if (i == j) continue;
-			double t = a[i];
-			a[i] = a[j];
-			a[j] = t;
-		}
 	}
 
 	/**
