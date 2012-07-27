@@ -201,8 +201,6 @@ public class SimpleNode implements Serializable {
 	}
 
 	private static void successSandbergDirected(final ArrayList<SimpleNode> nodeChain) {
-		// Can't fold if no nodes involved, (local node was closest right off) or if one node nowhere to fold to.
-		if (nodeChain.size() < 2) return;
 		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
 
 		final SimpleNode endpoint;
@@ -215,6 +213,8 @@ public class SimpleNode implements Serializable {
 	}
 
 	private static void success(final ArrayList<SimpleNode> nodeChain, PathFolding policy) {
+		// Can't fold if no nodes involved, (local node was closest right off) or if one node nowhere to fold to.
+		if (nodeChain.size() < 2) return;
 		switch (policy) {
 		case NONE: return;
 		case FREENET: successFreenet(nodeChain);
