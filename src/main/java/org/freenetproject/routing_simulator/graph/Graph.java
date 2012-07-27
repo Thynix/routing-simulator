@@ -119,21 +119,21 @@ public class Graph {
 			if (src.atDegree()) continue;
 			SimpleNode dest;
 
-				// Fill distance entry array.
-				for (int j = 0; j < nodes.size(); j++) {
-					distances[j] = new DistanceEntry(Location.distance(src.getLocation(), g.nodes.get(j).getLocation()), j);
-				}
+			// Fill distance entry array.
+			for (int j = 0; j < nodes.size(); j++) {
+				distances[j] = new DistanceEntry(Location.distance(src.getLocation(), g.nodes.get(j).getLocation()), j);
+			}
 
-				//System.out.println("distances size is " + );
-				Arrays.sort(distances);
+			//System.out.println("distances size is " + );
+			Arrays.sort(distances);
 
-				// Make connections until at desired degree.
-				while (!src.atDegree()) {
-					dest = linkLengthSource.getPeer(src);
-					if (src == dest || src.isConnected(dest) ||
-					    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;
-					src.connect(dest);
-				}
+			// Make connections until at desired degree.
+			while (!src.atDegree()) {
+				dest = linkLengthSource.getPeer(src);
+				if (src == dest || src.isConnected(dest) ||
+				    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;
+				src.connect(dest);
+			}
 		}
 
 		return g;
