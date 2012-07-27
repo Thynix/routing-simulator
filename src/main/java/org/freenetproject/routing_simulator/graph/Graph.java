@@ -96,8 +96,10 @@ public class Graph {
 		}
 
 		// Shortcuts: Edges from each node to an endpoint.
-		for (int i = 0; i < nodes.size(); i++) {
-			g.getNode(i).connectOutgoing(linkLengthSource.getPeer(g.getNode(i)));
+		for (SimpleNode origin : g.nodes) {
+			SimpleNode endpoint = linkLengthSource.getPeer(origin);
+			if (origin.isConnected(endpoint)) continue;
+			origin.connectOutgoing(endpoint);
 		}
 
 		return g;
