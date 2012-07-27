@@ -14,9 +14,8 @@ public class KleinbergLinkSource extends LinkLengthSource {
 	private final HashMap<SimpleNode, double[]> sumProbs;
 
 	public KleinbergLinkSource(Random random, ArrayList<SimpleNode> nodes) {
-		// No need for
-		super(random, new ArrayList<SimpleNode>());
-		sumProbs = new HashMap<SimpleNode, double[]>();
+		super(random, nodes);
+		sumProbs = new HashMap<SimpleNode, double[]>(nodes.size());
 	}
 
 	@Override
