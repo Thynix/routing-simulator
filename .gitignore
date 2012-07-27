@@ -2,3 +2,6 @@
 *.class
 *.iml
 /out/
+/results/
+/graphs/
+/target/
