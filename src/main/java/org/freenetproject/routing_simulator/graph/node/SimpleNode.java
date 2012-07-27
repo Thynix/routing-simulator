@@ -217,9 +217,9 @@ public class SimpleNode implements Serializable {
 		if (nodeChain.size() < 2) return;
 		switch (policy) {
 		case NONE: return;
-		case FREENET: successFreenet(nodeChain);
-		case SANDBERG: successSandberg(nodeChain);
-		case SANDBERG_DIRECTED: successSandbergDirected(nodeChain);
+		case FREENET: successFreenet(nodeChain); break;
+		case SANDBERG: successSandberg(nodeChain); break;
+		case SANDBERG_DIRECTED: successSandbergDirected(nodeChain); break;
 		}
 	}
 
