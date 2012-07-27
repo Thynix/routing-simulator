@@ -68,12 +68,14 @@ public class KleinbergLinkSource extends LinkLengthSource {
 		 */
 		if (idx < 0) idx = -1 - idx;
 
-		//idx is index of the first greater element, but use the lesser if it is closer.
-		if (idx > 0 && Math.abs(x - sumProb[idx - 1]) < Math.abs(x - sumProb[idx])) idx--;
+		/*
+		 * idx is index of the first greater element, but use the lesser if it is closer, unless that
+		 * would mean the origin node connecting to itself.
+		 */
+		if (idx > 0 && Math.abs(x - sumProb[idx - 1]) < Math.abs(x - sumProb[idx]) && idx - 1 != from.index) idx--;
 
-		//Assert that this actually is the closest.
-		if (idx > 0) assert Math.abs(x - sumProb[idx]) < Math.abs(x - sumProb[idx - 1]);
-		if (idx < sumProb.length - 1) assert Math.abs(x - sumProb[idx]) < Math.abs(x - sumProb[idx + 1]);
+		// A node cannot connect to itself - do not offer it as a possibility.
+		assert nodes.get(idx) != from;
 
 		return nodes.get(idx);
 	}
