@@ -232,8 +232,9 @@ public class SimpleNode implements Serializable {
 	}
 
 	/**
-	 * Routes greedily from this node to the node at the target location. Stops when hopsToLive hits zero, or there
-	 * is no node closer than the local one. When that happens, it performs path folds with the specified policy.
+	 * Routes greedily from this node to the node at the target location. Stops when hopsToLive hits zero, or the
+	 * local node is the closest to the target out of itself and all its neighbors. When that happens, it performs
+	 * path folds with the specified policy.
 	 *
 	 * @param target Location to route to.
 	 * @param hopsToLive Maximum number of additional hops.
