@@ -1,5 +1,6 @@
 package org.freenetproject.routing_simulator.graph;
 
+import org.apache.commons.math3.util.Pair;
 import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
 import org.freenetproject.routing_simulator.graph.linklength.KleinbergLinkSource;
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
@@ -16,6 +17,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
 
 /**
@@ -331,15 +333,17 @@ public class Graph {
 	 * @return Total number of edges
 	 */
 	public int nEdges() {
-		int nEdges = 0;
-		for (int i = 0; i < nodes.size(); i++) {
-			nEdges += nodes.get(i).degree();
+		// Indexes in <lesser, greater> order of a connection.
+		HashSet<Pair<Integer, Integer>> connections = new HashSet<Pair<Integer, Integer>>();
+
+		for (SimpleNode origin : nodes) {
+			for (SimpleNode peer : origin.getConnections()) {
+				if (origin.index < peer.index) connections.add(new Pair<Integer, Integer>(origin.index, peer.index));
+				else connections.add(new Pair<Integer, Integer>(peer.index, origin.index));
+			}
 		}
 
-		//TODO: There are directed links now.
-		//edges are undirected and will be double counted
-		assert nEdges % 2 == 0;
-		return nEdges / 2;
+		return connections.size();
 	}
 
 	/**
