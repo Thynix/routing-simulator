@@ -55,22 +55,22 @@ public class KleinbergLinkSource extends LinkLengthSource {
 		int idx;
 		double x;
 		do {
-		x = random.nextDouble() * norm;
-		assert x <= norm;
-		idx = Arrays.binarySearch(sumProb, x);
-		/*
-		 * If such value is not actually present, as it might not be due to being
-		 * floating point, use the index where it would be inserted:
-		 * idx = -insertion point - 1
-		 * insertion point = -1 - idx
-		 * The insertion point would be the length of the array and thus out of bounds
-		 * if all elements were less than it, but this will not happen as norm is the
-		 * greatest element and nextDouble() is [0, 1). This does not mean it will not
-		 * choose the greatest element as insertion point is the index of the first
-		 * greater element.
-		 */
-		if (idx < 0) idx = -1 - idx;
+			x = random.nextDouble() * norm;
+			assert x <= norm;
+			idx = Arrays.binarySearch(sumProb, x);
 
+			/*
+			 * If such value is not actually present, as it might not be due to being
+			 * floating point, use the index where it would be inserted:
+			 * idx = -insertion point - 1
+			 * insertion point = -1 - idx
+			 * The insertion point would be the length of the array and thus out of bounds
+			 * if all elements were less than it, but this will not happen as norm is the
+			 * greatest element and nextDouble() is [0, 1). This does not mean it will not
+			 * choose the greatest element as insertion point is the index of the first
+			 * greater element.
+			 */
+			if (idx < 0) idx = -1 - idx;
 		} while (idx == from.index);
 
 		/*
