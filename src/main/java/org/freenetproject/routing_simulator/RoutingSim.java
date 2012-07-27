@@ -127,14 +127,8 @@ public class RoutingSim {
 		options.addOption("i", "poisson-degree", true, "Distribution conforming to a Poisson distribution with the given mean.");
 
 		//Simulations: Routing policies
-		//TODO: But what do the various numbers actually mean?
-		options.addOption("R", "route", true, "Simulate routing policy of the specified number; possible policies are 1 through 6. Requires that --instant-reject, --low-uptime, --requests, --output-route, --intersect-tests, --fold-policy, and --output-hops be specified.");
-		//TODO: Explain more on these - what are their effects?
-		options.addOption("q", "requests", true, "Number of requests to run.");
-		options.addOption("n", "intersect-tests", true, "Number of intersect tests per request: same target but random origin.");
+		options.addOption("R", "route", true, "Simulate routing the given number of requests. Requires that --output-route, --fold-policy, and --output-hops be specified.");;
 		options.addOption("o", "output-route", true, "File to which routing information is output.");
-		options.addOption("I", "instant-reject", true, "Probability between 0.0 and 1.0 that a connection is instantly rejected.");
-		options.addOption("u", "low-uptime", true, "Probability between 0.0 and 1.0 that a node has low uptime.");
 		StringBuilder description = new StringBuilder("Path folding policy:");
 		for (PathFolding policy : PathFolding.values()) description.append(" ").append(policy);
 		options.addOption("P", "fold-policy", true,  description.toString());
@@ -187,8 +181,8 @@ public class RoutingSim {
 			return;
 		}
 
-		if (cmd.hasOption("route") && (!cmd.hasOption("requests") || !cmd.hasOption("intersect-tests") || !cmd.hasOption("instant-reject") || !cmd.hasOption("low-uptime") || !cmd.hasOption("output-route") || !cmd.hasOption("fold-policy") || !cmd.hasOption("output-hops"))) {
-			System.out.println("--route was specified, but not one or more of its required parameters: --requests, --intersect-tests, --instant-reject, --low-uptime, --output-route, --fold-policy, --output-hops.");
+		if (cmd.hasOption("route") && !(cmd.hasOption("output-route") && cmd.hasOption("fold-policy") && cmd.hasOption("output-hops"))) {
+			System.out.println("--route was specified, but not all of its required parameters: --output-route, --fold-policy, --output-hops.");
 			return;
 		}
 		if (cmd.hasOption("probe") && !cmd.hasOption("output-probe")) {
@@ -264,9 +258,7 @@ public class RoutingSim {
 			histogramOutput[i] = new PrintStream(writableFile(cmd.getOptionValue("output-hops")+ "-" + sinkPolsUsed[i]));
 		}
 
-		int nRequests = cmd.hasOption("requests") ? Integer.valueOf(cmd.getOptionValue("requests")) : 4000;
-		int nIntersectTests = cmd.hasOption("intersect-tests") ? Integer.valueOf(cmd.getOptionValue("intersect-tests")) : 2;
-		int routePol = cmd.hasOption("route") ? Integer.valueOf(cmd.getOptionValue("route")) : 3;
+		int nRequests = cmd.hasOption("route") ? Integer.valueOf(cmd.getOptionValue("route")) : 4000;
 		int maxHops = cmd.hasOption("probe") ? Integer.valueOf(cmd.getOptionValue("probe")) : 50;
 
 		Random rand;
@@ -340,7 +332,7 @@ public class RoutingSim {
 
 		if (cmd.hasOption("route")) {
 			rand = new MersenneTwister(seed);
-			simulate(g, rand, nRequests, nIntersectTests, routePol, sinkPolsUsed, verbose, cmd.getOptionValue("output-route"), pathFolding, histogramOutput);
+			simulate(g, rand, nRequests, cmd.getOptionValue("output-route"), pathFolding, histogramOutput);
 		}
 
 		if (cmd.hasOption("output-degree")) {
@@ -492,9 +484,8 @@ public class RoutingSim {
 		}
 	}
 
-	public static void simulate(Graph g, Random rand, int nRequests, int nIntersectTests,
-	                            int routePolicy, int[] sinkPolsUsed, boolean printPairedMaxHTI, final String outputPath,
-	                            PathFolding policy, final PrintStream[] histogramOutput) {
+	public static void simulate(Graph g, Random rand, int nRequests, final String outputPath,
+	                            final PathFolding policy, final PrintStream[] histogramOutput) {
 		File outputFile = new File(outputPath);
 		PrintStream stream = null;
 		try {
@@ -503,7 +494,7 @@ public class RoutingSim {
 			System.err.println("Cannot open file \"" + outputPath + ": " + e);
 			System.exit(1);
 		}
-		stream.println("Routing " + nRequests * nIntersectTests + " requests, policy " + routePolicy + " on network of size " + g.size() + ".");
+		stream.println("Routing " + nRequests + " requests on network of size " + g.size() + ".");
 		long startTime = System.currentTimeMillis();
 
 
