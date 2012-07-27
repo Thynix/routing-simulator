@@ -51,10 +51,13 @@ public class KleinbergLinkSource extends LinkLengthSource {
 		 */
 		final double[] sumProb = sumProbs.get(from);
 		final double norm = sumProb[sumProb.length - 1];
-		double x = random.nextDouble() * norm;
-		assert x <= norm;
-		int idx = Arrays.binarySearch(sumProb, x);
 
+		int idx;
+		double x;
+		do {
+		x = random.nextDouble() * norm;
+		assert x <= norm;
+		idx = Arrays.binarySearch(sumProb, x);
 		/*
 		 * If such value is not actually present, as it might not be due to being
 		 * floating point, use the index where it would be inserted:
@@ -67,6 +70,8 @@ public class KleinbergLinkSource extends LinkLengthSource {
 		 * greater element.
 		 */
 		if (idx < 0) idx = -1 - idx;
+
+		} while (idx == from.index);
 
 		/*
 		 * idx is index of the first greater element, but use the lesser if it is closer, unless that
