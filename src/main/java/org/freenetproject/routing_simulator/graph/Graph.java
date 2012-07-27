@@ -1,7 +1,7 @@
 package org.freenetproject.routing_simulator.graph;
 
-import org.freenetproject.routing_simulator.graph.degree.FixedDegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
+import org.freenetproject.routing_simulator.graph.linklength.KleinbergLinkSource;
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
 import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
@@ -25,7 +25,7 @@ import java.util.Random;
  */
 public class Graph {
 	private ArrayList<SimpleNode> nodes;
-	private double[] locations;
+
 	/**
 	 * Probability of not making a connection with a peer which has its desired degree.
 	 */
@@ -34,33 +34,34 @@ public class Graph {
 	/**
 	 * Private constructor; call one of the generator functions instead.
 	 *
-	 * @param nNodes Initial internal capacity.  The actual graph may have
-	 * more or fewer nodes.
+	 * @param nodes The nodes which make up the network.
+	 * @see
 	 */
-	private Graph(int nNodes) {
-		if (nNodes <= 0)
-			throw new IllegalArgumentException("Must have positive nodes.");
-		nodes = new ArrayList<SimpleNode>(nNodes);
-		locations = null;
+	private Graph(ArrayList<SimpleNode> nodes) {
+		this.nodes = nodes;
 	}
 
-	private void generateNodes(GraphParam param, Random rand, DegreeSource source) {
-		locations = new double[param.n];
-		if (param.fastGeneration) {
-			for (int i = 0; i < param.n; i++) locations[i] = (1.0 * i) / param.n;
+	public static ArrayList<SimpleNode> generateNodes(final int nNodes, final Random rand, boolean fastGeneration, DegreeSource source) {
+		double[] locations = new double[nNodes];
+		if (fastGeneration) {
+			for (int i = 0; i < nNodes; i++) locations[i] = (1.0 * i) / nNodes;
 		} else {
-			for (int i = 0; i < param.n; i++) locations[i] = rand.nextDouble();
+			for (int i = 0; i < nNodes; i++) locations[i] = rand.nextDouble();
 		}
 
-		//TODO: Reason to sort if not fastGeneration?
+		// Increasing index should also mean increasing location.
 		Arrays.sort(locations);
-		for (int i = 0; i < param.n; i++) {
+
+		final ArrayList<SimpleNode> nodes = new ArrayList<SimpleNode>(nNodes);
+
+		for (int i = 0; i < nNodes; i++) {
 			//TODO: index in constructor
 			SimpleNode node = new SimpleNode(locations[i], rand, source.getDegree());
 			node.index = i;
 			nodes.add(node);
 		}
 
+		return nodes;
 	}
 
 	private static class DistanceEntry implements Comparable<DistanceEntry> {
@@ -78,51 +79,46 @@ public class Graph {
 		}
 	}
 
-	public static Graph generateSandberg(GraphParam param, Random rand) {
-		Graph g = new Graph(param.n);
-
-		DegreeSource source = new FixedDegreeSource(1337);
-		g.generateNodes(param, rand, source);
+	/**
+	 * Connects a directed graph with lattice links between X and X - 1 mod N.
+	 * Each node has a single shortcut edge with an endpoint determined by the link length source.
+	 * @param linkLengthSource Provides shortcut endpoints.
+	 */
+	public static Graph connectSandberg(ArrayList<SimpleNode> nodes, LinkLengthSource linkLengthSource) {
+		Graph g = new Graph(nodes);
 
 		// Base graph: Edge from X to X - 1 mod N for all nodes 0 to N - 1.
-		for (int i = 0; i < param.n; i++) {
+		for (int i = 0; i < nodes.size(); i++) {
 			// Modulo of negative not defined: manually wrap.
 			int wrapped = i - 1;
-			if (wrapped < 0) wrapped += param.n;
+			if (wrapped < 0) wrapped += nodes.size();
 			g.getNode(i).connectOutgoing(g.getNode(wrapped));
 		}
 
-		// Shortcuts: Edges from each node to... TODO: random endpoint?
-		int other;
-		for (int i = 0; i < param.n; i++) {
-			do {
-				other = rand.nextInt(param.n);
-			} while (other == i || g.getNode(i).isConnected(g.getNode(other)));
-			g.getNode(i).connectOutgoing(g.getNode(other));
+		// Shortcuts: Edges from each node to an endpoint.
+		for (int i = 0; i < nodes.size(); i++) {
+			g.getNode(i).connectOutgoing(linkLengthSource.getPeer(g.getNode(i)));
 		}
 
 		return g;
 	}
 
-	//TODO: Using GraphParam as an argument is beginning to smell: this takes additional arguments and ignores the number of close connections.
 	/**
 	 * Generates a graph with link length distribution and peer count distribution as described in the given sources.
-	 * @param param graph generation parameters. Local and remote connections irrelevant as given distribution is followed.
 	 * @param rand used for random numbers
 	 * @return specified graph
 	 */
-	public static Graph generateGraph(GraphParam param, Random rand, DegreeSource degreeSource, LinkLengthSource linkLengthSource) {
-		Graph g = new Graph(param.n);
-		g.generateNodes(param, rand, degreeSource);
+	public static Graph connectGraph(ArrayList<SimpleNode> nodes, Random rand, LinkLengthSource linkLengthSource) {
+		Graph g = new Graph(nodes);
 
-		DistanceEntry[] distances = new DistanceEntry[param.n];
-		for (int i = 0; i < param.n; i++) {
+		DistanceEntry[] distances = new DistanceEntry[nodes.size()];
+		for (int i = 0; i < nodes.size(); i++) {
 			SimpleNode src = g.nodes.get(i);
 			if (src.atDegree()) continue;
 			SimpleNode dest;
 
 				// Fill distance entry array.
-				for (int j = 0; j < param.n; j++) {
+				for (int j = 0; j < nodes.size(); j++) {
 					distances[j] = new DistanceEntry(Location.distance(src.getLocation(), g.nodes.get(j).getLocation()), j);
 				}
 
@@ -131,130 +127,11 @@ public class Graph {
 
 				// Make connections until at desired degree.
 				while (!src.atDegree()) {
-					double length = linkLengthSource.getLinkLength(rand);
-					int idx = Arrays.binarySearch(distances, new DistanceEntry(length, -1));
-					if (idx < 0) idx = -1 - idx;
-					if (idx >= param.n) idx = param.n - 1;
-					dest = g.nodes.get(distances[idx].index);
+					dest = linkLengthSource.getPeer(src);
 					if (src == dest || src.isConnected(dest) ||
 					    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;
 					src.connect(dest);
 				}
-		}
-
-		return g;
-	}
-
-	/**
-	 * Generate a one-dimensional Kleinberg Graph with given parameters.
-	 * See The Small-World Phenomenon: An Algorithmic Perspective
-	 * Jon Kleinberg, 1999
-	 * http://www.cs.cornell.edu/home/kleinber/swn.pdf
-	 * We use a modified version where edges are not directed.
-	 * Note that q specifies outgoing links, and p is distance not link
-	 * count.  Average node degree will be 2 * (p + q), minimum node
-	 * degree 2 * p + q.  There is no maximum node degree.
-	 * TODO: Adjacent link support not yet tested.
-	 *
-	 * @param param Contains graph parameters such as size and number of various-distance connections.
-	 * @param rand Random number source used for initialization: locations and probabilities.
-	 * @return A Graph with the desired structure
-	 */
-	public static Graph generate1dKleinbergGraph(GraphParam param, Random rand, DegreeSource source) {
-		//TODO: Arguments list is cleaner, but this is a mess.
-		final int n = param.n;
-		final boolean fastGeneration = param.fastGeneration;
-
-		Graph g = new Graph(n);
-
-		//make nodes
-		g.generateNodes(param, rand, source);
-
-		//make far links
-		double[] sumProb = new double[n];
-		for (int i = 0; i < n; i++) {
-			SimpleNode src = g.nodes.get(i);
-			SimpleNode dest;
-			if (fastGeneration) {
-				//Continuous approximation to 1/d distribution; accurate in the large n case.
-				//Treats spacing as even, whether or not that is accurate.
-				//Assumes nodes are sorted in location order.
-				double maxSteps = n / 2.0;
-				while (!src.atDegree()) {
-					/*
-					 * The array is sorted by location and evenly spaced, so a change in index goes
-					 * a consistent distance away.
-					 */
-					int steps = (int)Math.round(Math.pow(maxSteps, rand.nextDouble()));
-					assert steps >= 0 && steps <= n / 2;
-					int idx = rand.nextBoolean() ? i + steps : i - steps;
-					if (idx < 0) idx += n;
-					if (idx >= n) idx -= n;
-					dest = g.nodes.get(idx);
-					if (idx == i || src.isConnected(dest)
-					    || (dest.atDegree() && rand.nextDouble() < rejectProbability)) {
-						continue;
-					}
-					src.connect(dest);
-				}
-			} else {
-				//Slow generation operates on exact node locations (even or otherwise).
-				//Does not require sorted node order.
-				//Precisely accurate even with uneven locations and small graph size.
-
-				/*
-				 * Find normalizing constant for this node - sum distance probabilities so that they
-				 * they are in increasing order and may be searched through to find the closest link.
-				 * Note that this means here the probability is proportional to 1/distance.
-				 * sumProb is a non-normalized CDF of probabilities by node index.
-				 */
-				double norm = 0.0;
-				for (int j = 0; j < n; j++) {
-					if (i != j) {
-						norm += 1.0 / Location.distance(src.getLocation(), g.nodes.get(j).getLocation());
-					}
-					sumProb[j] = norm;
-					//CDF must be non-decreasing
-					if (j > 0) assert sumProb[j] >= sumProb[j-1];
-				}
-
-				while (!src.atDegree()) {
-					/*
-					 * sumProb is a CDF, so to weight by it pick a "Y value" and find closest index.
-					 * norm is now the highest (and last) value in the CDF, so this is picking
-					 * a distance probability sum and finding the closest node for that distance.
-					 * Because there are more nodes which match values in highly represented domains
-					 * (steeper in the CDF) a random value is more likely to be in those areas.
-					 */
-					double x = rand.nextDouble() * norm;
-					assert x <= norm;
-					int idx = Arrays.binarySearch(sumProb, x);
-					/*
-					 * If such value is not actually present, as it might not be due to being
-					 * floating point, use the index where it would be inserted:
-					 * idx = -insertion point - 1
-					 * insertion point = -1 - idx
-					 * The insertion point would be the length of the array and thus out of bounds
-					 * if all elements were less than it, but this will not happen as norm is the
-					 * greatest element and nextDouble() is [0, 1). This does not mean it will not
-					 * choose the greatest element as insertion point is the index of the first
-					 * greater element.
-					 * TODO: Does this result in choosing the greater value when the lesser is closer? Looks like it yes.
-					 */
-					if (idx < 0) idx = -1 - idx;
-					//idx is index of the first greater element, but use the lesser if it is closer.
-					if (idx > 0 && Math.abs(x - sumProb[idx - 1]) < Math.abs(x - sumProb[idx])) idx--;
-					//Assert that this actually is the closest.
-					if (idx > 0) assert Math.abs(x - sumProb[idx]) < Math.abs(x - sumProb[idx - 1]);
-					if (idx < sumProb.length - 1) assert Math.abs(x - sumProb[idx]) < Math.abs(x - sumProb[idx + 1]);
-					dest = g.nodes.get(idx);
-					if (src == dest || src.isConnected(dest)
-					    || (dest.atDegree() && rand.nextDouble() < rejectProbability)) {
-						continue;
-					}
-					src.connect(dest);
-				}
-			}
 		}
 
 		return g;
@@ -287,6 +164,7 @@ public class Graph {
 			 * Add to intermediate list first in order to be able to write the number of connections for the
 			 * purposes of reading more easily.
 			 * TODO: Better to read pairs until error? Less extensible.
+			 * TODO: Assumes undirected connections.
 			 */
 			final ArrayList<Integer> connectionIndexes = new ArrayList<Integer>();
 			int writtenConnections = 0;
@@ -329,15 +207,13 @@ public class Graph {
 
 			// Number of nodes.
 			final int networkSize = input.readInt();
-			final Graph graph = new Graph(networkSize);
-			graph.locations = new double[networkSize];
+			final Graph graph = new Graph(new ArrayList<SimpleNode>(networkSize));
 
 			// Nodes.
 			for (int i = 0; i < networkSize; i++) {
 				SimpleNode node = (SimpleNode)input.readObject();
 				node.setRand(random);
 				node.index = i;
-				graph.locations[i] = node.getLocation();
 				graph.nodes.add(node);
 			}
 
@@ -458,6 +334,7 @@ public class Graph {
 			nEdges += nodes.get(i).degree();
 		}
 
+		//TODO: There are directed links now.
 		//edges are undirected and will be double counted
 		assert nEdges % 2 == 0;
 		return nEdges / 2;
@@ -629,7 +506,8 @@ public class Graph {
 		for (int trial = 0; trial < nTrials; trial++) {
 			System.out.println("Creating test graph...");
 			Random rand = new MersenneTwister(trial);
-			Graph g = generate1dKleinbergGraph(new GraphParam(nNodes, 0.0, 0.0, true), rand, new PoissonDegreeSource(12));
+			final ArrayList<SimpleNode> nodes = Graph.generateNodes(nNodes, rand, true, new PoissonDegreeSource(12));
+			Graph g = connectGraph(nodes, rand, new KleinbergLinkSource(rand, nodes));
 			g.printGraphStats(true);
 			int[] uniformWalkDist;
 			int[] weightedWalkDist;

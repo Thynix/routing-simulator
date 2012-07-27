@@ -13,6 +13,7 @@ import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.FixedDegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
 import org.freenetproject.routing_simulator.graph.linklength.ConformingLinkSource;
+import org.freenetproject.routing_simulator.graph.linklength.KleinbergLinkSource;
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
 import org.freenetproject.routing_simulator.graph.linklength.UniformLinkSource;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
@@ -307,30 +308,31 @@ public class RoutingSim {
 		long startTime = System.currentTimeMillis();
 		long lastTime = startTime;
 
+		// Load the graph; otherwise generate.
 		Graph g;
 		if (cmd.hasOption("load-graph")) {
 			g = Graph.read(new File(cmd.getOptionValue("load-graph")), rand);
 		} else {
-			LinkLengthSource linkLengthSource;
-			if (cmd.hasOption("conforming-link")) linkLengthSource = new ConformingLinkSource(cmd.getOptionValue("conforming-link"));
-			else if (cmd.hasOption("ideal-link")) linkLengthSource = null;
-			else if (cmd.hasOption("flat-link")) linkLengthSource = new UniformLinkSource();
-			else /* if (cmd.hasOption("sandberg-graph") */ linkLengthSource = null;
+			final int networkSize = Integer.valueOf(cmd.getOptionValue("size"));
 
-			DegreeSource degreeSource;
+			final DegreeSource degreeSource;
 			if (cmd.hasOption("conforming-degree")) degreeSource = new ConformingDegreeSource(cmd.getOptionValue("conforming-degree"), rand);
 			else if (cmd.hasOption("poisson-degree")) degreeSource = new PoissonDegreeSource(Integer.valueOf(cmd.getOptionValue("poisson-degree")));
 			else if (cmd.hasOption("fixed-degree")) degreeSource = new FixedDegreeSource(Integer.valueOf(cmd.getOptionValue("fixed-degree")));
-			else /* if (cmd.hasOption("sandberg-graph") */ degreeSource = null;
+			else /* if (cmd.hasOption("sandberg-graph") */ degreeSource = new FixedDegreeSource(0);
 
-			if (linkLengthSource == null) {
+			final ArrayList<SimpleNode> nodes = Graph.generateNodes(networkSize, rand, true, degreeSource);
+
+			final LinkLengthSource linkLengthSource;
+			if (cmd.hasOption("conforming-link")) linkLengthSource = new ConformingLinkSource(cmd.getOptionValue("conforming-link"), rand, nodes);
+			else if (cmd.hasOption("ideal-link")) linkLengthSource = new KleinbergLinkSource(rand, nodes);
+			else if (cmd.hasOption("flat-link")) linkLengthSource = new UniformLinkSource(rand, nodes);
+			else throw new IllegalStateException("Link length distribution undefined.");
+
 				if (cmd.hasOption("sandberg-graph")) {
-					g = Graph.generateSandberg(gp, rand);
+				g = Graph.connectSandberg(nodes, linkLengthSource);
 				} else {
-				g = Graph.generate1dKleinbergGraph(gp, rand, degreeSource);
-				}
-			} else {
-				g = Graph.generateGraph(gp, rand, degreeSource, linkLengthSource);
+				g = Graph.connectGraph(nodes, rand, linkLengthSource);
 			}
 		}
 

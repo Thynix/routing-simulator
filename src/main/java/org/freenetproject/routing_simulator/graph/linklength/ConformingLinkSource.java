@@ -1,5 +1,7 @@
 package org.freenetproject.routing_simulator.graph.linklength;
 
+import org.freenetproject.routing_simulator.graph.node.SimpleNode;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -8,9 +10,16 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Random;
 
-public class ConformingLinkSource implements LinkLengthSource {
+public class ConformingLinkSource extends LinkLengthSource {
+
 	private final ArrayList<Double> lengths;
-	public ConformingLinkSource(String filename) {
+
+	/**
+	 * @see LinkLengthSource#LinkLengthSource(java.util.Random, java.util.ArrayList)
+	 */
+	public ConformingLinkSource(String filename, Random random, ArrayList<SimpleNode> nodes) {
+		super(random, nodes);
+
 		lengths = new ArrayList<Double>();
 		try {
 			BufferedReader reader = new BufferedReader(new FileReader(new File(filename)));
@@ -32,7 +41,7 @@ public class ConformingLinkSource implements LinkLengthSource {
 	}
 
 	@Override
-	public double getLinkLength(Random random) {
-		return lengths.get(random.nextInt(lengths.size()));
+	public SimpleNode getPeer(SimpleNode from) {
+		return closestTo(from, lengths.get(random.nextInt(lengths.size())));
 	}
 }

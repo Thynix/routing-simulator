@@ -84,6 +84,13 @@ public class SimpleNode implements Serializable {
 		return Location.distance(location, l);
 	}
 
+	/**
+	 * @param other node to consider.
+	 * @return routing distance between this node and the other.
+	 */
+	public double distanceTo(SimpleNode other) {
+		return distanceToLoc(other.getLocation());
+	}
 
 	/**
 	 * Get the location of this node.
