@@ -7,7 +7,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.freenetproject.routing_simulator.graph.Graph;
-import org.freenetproject.routing_simulator.graph.GraphParam;
 import org.freenetproject.routing_simulator.graph.degree.ConformingDegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.FixedDegreeSource;
@@ -288,21 +287,6 @@ public class RoutingSim {
 		}
 
 		rand = new MersenneTwister(seed);
-		GraphParam gp = new GraphParam(
-			/*
-			 * Size need not be specified if loading an existing graph, but the GraphParam constructor
-			 * enforces a minimum.
-			 */
-			cmd.hasOption("size") ? Integer.valueOf(cmd.getOptionValue("size")) : 0,
-			cmd.hasOption("low-uptime") ? Double.valueOf(cmd.getOptionValue("low-uptime")) : 0,
-			cmd.hasOption("instant-reject") ? Double.valueOf(cmd.getOptionValue("instant-reject")) : 0,
-			cmd.hasOption("fast-generation"));
-
-		if (verbose) {
-			System.out.print("Generating graph of " + gp.n + " nodes, with ");
-			System.out.println("parameters pLowUptime = " + gp.pLowUptime + ", pInstantReject = " + gp.pInstantReject);
-			System.out.println(", fastGeneration = " + gp.fastGeneration);
-		}
 
 		//Time tracking: report time taken for each graph setting if verbose; upon completion otherwise.
 		long startTime = System.currentTimeMillis();
@@ -401,10 +385,7 @@ public class RoutingSim {
 
 		if (!quiet) {
 			System.out.println("Average stats:");
-			System.out.print("pLow\tpInst\tfastGeneration\t");
 			Graph.printGraphStatsHeader();
-			System.out.println();
-			System.out.print(gp.pLowUptime + "\t" + gp.pInstantReject + "\t" + gp.fastGeneration + "\t");
 			//TODO: Why is this hardcoded to 13?
 			for (int j = 0; j < 13; j++) {
 				//TODO: Hard-coded dimensions bad.
