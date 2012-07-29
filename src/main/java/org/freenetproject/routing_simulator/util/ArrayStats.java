@@ -1,6 +1,5 @@
 package org.freenetproject.routing_simulator.util;
 
-import static java.lang.Math.ceil;
 import static java.lang.Math.sqrt;
 
 /**
@@ -17,7 +16,6 @@ public class ArrayStats {
 	private double[] centralMoments;
 	private double[] cumulants;
 	private double mean;
-	private boolean isSorted;
 
 	/**
 	 * Construct a stats object for an int array.
@@ -47,18 +45,9 @@ public class ArrayStats {
 		centralMoments = null;
 		cumulants = null;
 		mean = 0.0;
-		isSorted = false;
 		this.isInt = iArray != null;
 		this.iArray = iArray;
 		this.dArray = dArray;
-	}
-
-	/**
-	 * Invalidate any cached data about the array, because it might have
-	 * changed.
-	 */
-	public void invalidate() {
-		valid = false;
 	}
 
 	/**Calculate all cached data if required*/
@@ -67,7 +56,6 @@ public class ArrayStats {
 		computeMean();
 		computeMoments();
 		computeCumulants();
-		checkSorted();
 		assert valid == false;
 		valid = true;
 	}
@@ -126,27 +114,6 @@ public class ArrayStats {
 			10 * cumulants[2] * cumulants[3];
 	}
 
-	/**Check whether the array is sorted as per Arrays.sort*/
-	private void checkSorted() {
-		if (valid) throw new IllegalStateException();
-		isSorted = true;
-		if (isInt) {
-			for (int i = 1; i < iArray.length; i++) {
-				if (iArray[i] < iArray[i-1]) {
-					isSorted = false;
-					break;
-				}
-			}
-		} else {
-			for (int i = 1; i < dArray.length; i++) {
-				if (dArray[i] < dArray[i-1]) {
-					isSorted = false;
-					break;
-				}
-			}
-		}
-	}
-
 	/**
 	 * Find the mean of the array.
 	 *
@@ -158,16 +125,6 @@ public class ArrayStats {
 	}
 
 	/**
-	 * Find the variance of the array.
-	 *
-	 * @return Variance of the array
-	 */
-	public double variance() {
-		makeValid();
-		return cumulants[2];
-	}
-
-	/**
 	 * Find the standard deviation of the array.
 	 *
 	 * @return Standard deviation of the array
@@ -175,17 +132,6 @@ public class ArrayStats {
 	public double stdDev() {
 		makeValid();
 		return sqrt(cumulants[2]);
-	}
-
-	/**
-	 * Find a central moment.
-	 *
-	 * @param n The central moment to find
-	 * @return The nth central moment of the array
-	 */
-	public double centralMoment(int n) {
-		makeValid();
-		return centralMoments[n];
 	}
 
 	/**
@@ -214,21 +160,5 @@ public class ArrayStats {
 	public double skewness() {
 		makeValid();
 		return standardMoment(3);
-	}
-
-	/**
-	 * Find the pth percentile of the array.  The array must be
-	 * sorted before calling.  This is the smallest element such that
-	 * at least p portion of the elements are less than it.
-	 *
-	 * @return The pth percentile element of the array
-	 */
-	public double percentile(double p) {
-		if (p < 0.0 || p > 1.0) throw new IllegalArgumentException();
-		makeValid();
-		if (!isSorted) throw new IllegalStateException();
-		int n = isInt ? iArray.length : dArray.length;
-		int i = ((int)(ceil(p * ((double)(n)))));
-		return isInt ? iArray[i] : dArray[i];
 	}
 }
