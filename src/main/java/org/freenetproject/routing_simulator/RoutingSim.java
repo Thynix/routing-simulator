@@ -320,7 +320,7 @@ public class RoutingSim {
 
 		double[] indivStats = g.graphStats();
 		//TODO: 13 is defined because this doubles array has 13 different types of information. This should be a class.
-		for (int i = 0; i < 13; i++) {
+		for (int i = 0; i < 11; i++) {
 			avgStats[0][i][0] = indivStats[i];
 		}
 

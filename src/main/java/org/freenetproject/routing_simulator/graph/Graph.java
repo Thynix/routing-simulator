@@ -280,15 +280,15 @@ public class Graph {
 			ArrayStats ccStats = new ArrayStats(cc);
 			ArrayStats degStats = new ArrayStats(deg);
 			System.out.print(size() + "\t" + nEdges() + "\t" + minDegree() + "\t" + maxDegree() + "\t" + globalClusterCoeff() + "\t");
-			System.out.print(ccStats.mean() + "\t" + ccStats.stdDev() + "\t" + ccStats.skewness() + "\t" + ccStats.kurtosis() + "\t");
-			System.out.print(degStats.mean() + "\t" + degStats.stdDev() + "\t" + degStats.skewness() + "\t" + degStats.kurtosis() + "\t");
+			System.out.print(ccStats.mean() + "\t" + ccStats.stdDev() + "\t" + ccStats.skewness() + "\t");
+			System.out.print(degStats.mean() + "\t" + degStats.stdDev() + "\t" + degStats.skewness() + "\t");
 		}
 	}
 
 	/**Print column headers for printGraphStats(false).*/
 	public static void printGraphStatsHeader() {
-		System.out.print("nNodes\tnEdges\tminDegree\tmaxDegree\tglobalClusterCoeff\tlocalCCMean\tlocalCCStdDev\tlocalCCSkew\tlocalCCKurtosis\t");
-		System.out.print("degreeMean\tdegreeStdDev\tdegreeSkew\tdegreeKurtosis\t");
+		System.out.print("nNodes\tnEdges\tminDegree\tmaxDegree\tglobalClusterCoeff\tlocalCCMean\tlocalCCStdDev\tlocalCCSkew\t");
+		System.out.print("degreeMean\tdegreeStdDev\tdegreeSkew\t");
 	}
 
 	/**Get the topology stats as an array.*/
@@ -298,8 +298,8 @@ public class Graph {
 		ArrayStats ccStats = new ArrayStats(cc);
 		ArrayStats degStats = new ArrayStats(deg);
 		return new double[] {size(), nEdges(), minDegree(), maxDegree(), globalClusterCoeff(),
-			ccStats.mean(), ccStats.stdDev(), ccStats.skewness(), ccStats.kurtosis(),
-			degStats.mean(), degStats.stdDev(), degStats.skewness(), degStats.kurtosis(),
+			ccStats.mean(), ccStats.stdDev(), ccStats.skewness(),
+			degStats.mean(), degStats.stdDev(), degStats.skewness(),
 		};
 	}
 

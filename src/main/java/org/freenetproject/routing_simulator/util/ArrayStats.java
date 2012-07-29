@@ -217,18 +217,6 @@ public class ArrayStats {
 	}
 
 	/**
-	 * Find the (excess) kurtosis of the array.
-	 *
-	 * @return Kurtosis of the array
-	 */
-	public double kurtosis() {
-		makeValid();
-		double k = standardMoment(4);
-		assert k >= -2.0;
-		return k;
-	}
-
-	/**
 	 * Find the pth percentile of the array.  The array must be
 	 * sorted before calling.  This is the smallest element such that
 	 * at least p portion of the elements are less than it.
