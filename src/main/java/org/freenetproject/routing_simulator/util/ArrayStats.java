@@ -77,13 +77,13 @@ public class ArrayStats {
 		if (valid) throw new IllegalStateException();
 		mean = 0.0;
 		if (isInt) {
-			for (int i = 0; i < iArray.length; i++) {
-				mean += iArray[i];
+			for (int anIArray : iArray) {
+				mean += anIArray;
 			}
 			mean /= iArray.length;
 		} else {
-			for (int i = 0; i < dArray.length; i++) {
-				mean += dArray[i];
+			for (double aDArray : dArray) {
+				mean += aDArray;
 			}
 			mean /= dArray.length;
 		}
