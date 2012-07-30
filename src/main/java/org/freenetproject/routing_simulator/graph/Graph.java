@@ -85,13 +85,8 @@ public class Graph {
 	public static Graph connectSandberg(ArrayList<SimpleNode> nodes, int shortcuts, LinkLengthSource linkLengthSource) {
 		Graph g = new Graph(nodes);
 
-		// Base graph: Edge from X to X - 1 mod N for all nodes 0 to N - 1.
-		for (int i = 0; i < nodes.size(); i++) {
-			// Modulo of negative not defined: manually wrap.
-			int wrapped = i - 1;
-			if (wrapped < 0) wrapped += nodes.size();
-			g.getNode(i).connectOutgoing(g.getNode(wrapped));
-		}
+		// Base graph of lattice edges: Edge from X to X - 1 mod N for all nodes 0 to N - 1.
+		g.addLatticeLinks(true);
 
 		// Shortcuts: Edges from each node to an endpoint.
 		for (SimpleNode origin : g.nodes) {
@@ -109,15 +104,35 @@ public class Graph {
 	}
 
 	/**
-	 * Generates a graph with link length distribution and peer count distribution as described in the given sources.
-	 * @param rand used for random numbers
-	 * @return specified graph
+	 * Adds lattice links.
+	 *
+	 * Connects node X to X - 1 mod N for all X, where X is node index and N is the network size.
+	 *
+	 * @param directed If true, the lattice links will be directed. If false, undirected.
 	 */
-	public static Graph connectGraph(ArrayList<SimpleNode> nodes, Random rand, LinkLengthSource linkLengthSource) {
-		Graph g = new Graph(nodes);
+	private void addLatticeLinks(final boolean directed) {
+		for (int i = 0; i < size(); i++) {
+			final SimpleNode from = getNode(i);
+			final SimpleNode to = getNode(Math.abs((i - 1) % size()));
+			if (from.isConnected(to) || to.isConnected(from)) continue;
 
+			if (directed) from.connectOutgoing(to);
+			else from.connect(to);
+		}
+	}
+
+	/**
+	 * Adds links to a graph which conform to the link length distribution and peer count distribution given.
+	 *
+	 * @param g Graph to add edges to.
+	 * @param rand Provides probabilities for whether to connect to a node which is already at its desired degree.
+	 * @param linkLengthSource Provides peers which give conforming connections.
+	 *
+	 * @return Graph with specified edges added.
+	 */
+	public static Graph connectGraph(Graph g, Random rand, LinkLengthSource linkLengthSource) {
 		SimpleNode destination;
-		for (SimpleNode src : nodes) {
+		for (SimpleNode src : g.nodes) {
 			if (src.atDegree()) continue;
 
 			// Make connections until at desired degree.
@@ -130,6 +145,24 @@ public class Graph {
 		}
 
 		return g;
+	}
+
+	public static Graph connectGraph(ArrayList<SimpleNode> nodes, Random rand, LinkLengthSource linkLengthSource) {
+		return connectGraph(new Graph(nodes), rand, linkLengthSource);
+	}
+
+	/**
+	 * Generates a graph with undirected lattice connections, and link length distribution and peer count
+	 * distribution as described in the given sources.
+	 *
+	 * @param nodes Nodes which make up the network.
+	 *
+	 * @see Graph#connectGraph(Graph, java.util.Random, org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource)
+	 */
+	public static Graph connectGraphLattice(ArrayList<SimpleNode> nodes, Random rand, LinkLengthSource linkLengthSource) {
+		Graph graph = new Graph(nodes);
+		graph.addLatticeLinks(false);
+		return Graph.connectGraph(graph, rand, linkLengthSource);
 	}
 
 	/**
@@ -274,14 +307,17 @@ public class Graph {
 	/**
 	 * Edge length distribution. Treats edges as directed.
 	 *
-	 * @param includeLatticeLinks If true, links from a node at index X to X - 1 mod N will be included. If false
+	 * @param includeLatticeLinks If true, links from nodes with adjacent indexes will be included. If false
 	 *                            they will not.
 	 */
 	public ArrayList<Double> edgeLengths(final boolean includeLatticeLinks) {
 		ArrayList<Double> lengths = new ArrayList<Double>();
 		for (SimpleNode node : nodes) {
 			for (SimpleNode peer : node.getConnections()) {
-				if (!includeLatticeLinks && node.index == (peer.index + 1) % size()) continue;
+				if (!includeLatticeLinks) {
+					if ( node.index == (peer.index + 1) % size() ||
+					     peer.index == (node.index + 1) % size()) continue;
+				}
 				lengths.add(node.distanceToLoc(peer.getLocation()));
 			}
 		}

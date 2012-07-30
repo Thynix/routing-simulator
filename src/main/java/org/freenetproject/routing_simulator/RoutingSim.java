@@ -138,6 +138,7 @@ public class RoutingSim {
 		options.addOption("G", "load-graph", true, "Path to load a saved graph from.");
 		options.addOption("g", "save-graph", true, "Path to save a graph after simulation is run on it.");
 		options.addOption("s", "sandberg-graph", true, "Generate a directed graph with an edge from x to x -1 mod N for all x = 0 ... N - 1 as described in early section 2.2.1 in \"Searching in a Small World.\" Takes the number of shortcuts to make; the paper specifies 1 shortcut.");
+		options.addOption("l", "lattice", false, "Generate a graph with undirected lattice links, the given degree distribution, and the given link length distribution");
 
 		//Graphs: link length distribution
 		options.addOption("l", "ideal-link", false, "Kleinberg's ideal distribution: proportional to 1/d.");
@@ -199,8 +200,18 @@ public class RoutingSim {
 			System.out.println("Graph cannot be generated with multiple methods at once.");
 			return;
 		}
-		if (degreeOptions == 0 && linkOptions == 0 && !cmd.hasOption("load-graph") && !cmd.hasOption("sandberg-graph")) {
+
+		/*
+		 * - Sandberg-graph requires link.
+		 * - Load-graph does not require link or degree.
+		 * - Without these two, degree and link must be specified; optionally lattice too.
+		 */
+		if (!(cmd.hasOption("load-graph") || (degreeOptions == 1 && linkOptions == 0 && !cmd.hasOption("sandberg-graph")) || (degreeOptions == 1 && linkOptions == 1))) {
 			System.out.println("No graph generation method specified.");
+			System.out.println("Valid graph types are:");
+			System.out.println(" * --load-graph");
+			System.out.println(" * --sandberg-graph with --*-link");
+			System.out.println(" * --*-degree, --*-link; optionally with --lattice");
 			return;
 		}
 
@@ -323,6 +334,8 @@ public class RoutingSim {
 
 				if (cmd.hasOption("sandberg-graph")) {
 				g = Graph.connectSandberg(nodes, Integer.valueOf(cmd.getOptionValue("sandberg-graph")), linkLengthSource);
+				} else if (cmd.hasOption("lattice")) {
+					g = Graph.connectGraphLattice(nodes, rand, linkLengthSource);
 				} else {
 				g = Graph.connectGraph(nodes, rand, linkLengthSource);
 			}
