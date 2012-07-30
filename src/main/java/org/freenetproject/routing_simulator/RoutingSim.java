@@ -127,7 +127,7 @@ public class RoutingSim {
 		options.addOption("i", "poisson-degree", true, "Distribution conforming to a Poisson distribution with the given mean.");
 
 		//Simulations: Routing policies
-		options.addOption("R", "route", true, "Simulate routing the given number of requests. Requires that --output-route, --fold-policy, and --output-hops be specified.");;
+		options.addOption("R", "route", true, "Simulate routing the given number of requests. Requires that --output-route, --fold-policy, and --output-hops be specified.");
 		options.addOption("o", "output-route", true, "File to which routing information is output.");
 		StringBuilder description = new StringBuilder("Path folding policy:");
 		for (PathFolding policy : PathFolding.values()) description.append(" ").append(policy);
