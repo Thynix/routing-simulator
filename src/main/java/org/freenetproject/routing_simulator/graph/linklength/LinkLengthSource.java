@@ -30,7 +30,7 @@ public abstract class LinkLengthSource {
 	final Random random;
 
 	/**
-	 * stores a list of the distances to each other node for every node submitted with a peer query.
+	 * Stores a list of the distances to each other node for every node submitted with a peer query.
 	 */
 	private final HashMap<SimpleNode, ArrayList<DistanceEntry>> linkLengths;
 

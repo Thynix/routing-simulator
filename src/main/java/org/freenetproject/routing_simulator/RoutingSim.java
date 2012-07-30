@@ -785,8 +785,8 @@ public class RoutingSim {
 	}
 
 	/**
-	 * @param a
-	 * @return Whether the array is sorted in non-decreasing order.
+	 * @param a The array to check.
+	 * @return True if the array is sorted in non-decreasing order.
 	 */
 	private static boolean isSorted(int[] a) {
 		for (int i = 0; i < a.length - 1; i++) if (a[i] > a[i+1]) return false;
