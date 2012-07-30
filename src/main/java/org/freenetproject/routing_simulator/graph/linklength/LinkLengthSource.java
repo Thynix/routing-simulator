@@ -77,6 +77,7 @@ public abstract class LinkLengthSource {
 		int index = Collections.binarySearch(distances, new DistanceEntry(length, null));
 		// Choose closest match. If not found index = -(insertion point) - 1, so insertion point = -1 - index.
 		if (index < 0) index = -1 - index;
+		if (index == distances.size()) index = distances.size() - 1;
 
 		return distances.get(index).node;
 	}
