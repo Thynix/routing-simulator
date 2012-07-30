@@ -1,20 +1,17 @@
 package org.freenetproject.routing_simulator.graph;
 
 import org.apache.commons.math3.util.Pair;
+import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
 import org.freenetproject.routing_simulator.graph.linklength.KleinbergLinkSource;
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
-import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 import org.freenetproject.routing_simulator.util.ArrayStats;
 import org.freenetproject.routing_simulator.util.MersenneTwister;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -57,10 +54,7 @@ public class Graph {
 		final ArrayList<SimpleNode> nodes = new ArrayList<SimpleNode>(nNodes);
 
 		for (int i = 0; i < nNodes; i++) {
-			//TODO: index in constructor
-			SimpleNode node = new SimpleNode(locations[i], rand, source.getDegree());
-			node.index = i;
-			nodes.add(node);
+			nodes.add(new SimpleNode(locations[i], rand, source.getDegree(), i));
 		}
 
 		return nodes;
@@ -152,40 +146,30 @@ public class Graph {
 	 * Writes graph to a file. Format:
 	 * <ul>
 	 *      <li>Number of nodes.</li>
-	 *      <li>Serialized SimpleNodes.</li>
+	 *      <li>SimpleNodes.</li>
+	 *      <li>Connections: index from, index to</li>
 	 * </ul>
-	 * @param destination file to write graph to.
+	 * @param output stream to write graph to.
 	 */
-	public void write(File destination) {
+	public void write(DataOutputStream output) {
 		try {
-			final FileOutputStream outputStream = new FileOutputStream(destination);
-			final ObjectOutputStream output = new ObjectOutputStream(outputStream);
 
 			// Number of nodes.
 			output.writeInt(nodes.size());
 
 			// Nodes.
-			for (SimpleNode node : nodes) output.writeObject(node);
+			for (SimpleNode node : nodes) node.write(output);
 
 			/*
-			 * Write connections starting from zero index to higher index nodes. This way each connection
-			 * will only be written once: the other end at a higher index will not write the connection to
-			 * the lower node, which has already been written.
-			 *
-			 * Add to intermediate list first in order to be able to write the number of connections for the
-			 * purposes of reading more easily.
-			 * TODO: Better to read pairs until error? Less extensible.
-			 * TODO: Assumes undirected connections.
+			 * Write every connection; undirected edges are two directed edges.
 			 */
 			final ArrayList<Integer> connectionIndexes = new ArrayList<Integer>();
 			int writtenConnections = 0;
-			for (int i = 0; i < nodes.size(); i++) {
-				for (SimpleNode node: nodes.get(i).getConnections()) {
-					if (node.index > i) {
+			for (SimpleNode from : nodes) {
+				for (SimpleNode to : from.getConnections()) {
 						writtenConnections++;
-						connectionIndexes.add(i);
-						connectionIndexes.add(node.index);
-					}
+						connectionIndexes.add(from.index);
+						connectionIndexes.add(to.index);
 				}
 			}
 
@@ -197,9 +181,9 @@ public class Graph {
 			}
 
 			output.flush();
-			outputStream.close();
+			output.close();
 		} catch (IOException e) {
-			System.err.println("Could not write to " + destination.getAbsolutePath() + ":");
+			System.err.println("Could not write to output stream:");
 			e.printStackTrace();
 			System.exit(3);
 		}
@@ -207,25 +191,19 @@ public class Graph {
 
 	/**
 	 * Constructs the graph from a file.
-	 * @param source file to read the graph from.
+	 * @param input stream to read the graph from.
 	 * @param random Randomness source to give to nodes.
 	 * @return graph defined by the file.
 	 */
-	public static Graph read(File source, Random random) {
+	public static Graph read(DataInputStream input, Random random) {
 		try {
-			final FileInputStream inputStream = new FileInputStream(source);
-			final ObjectInputStream input = new ObjectInputStream(inputStream);
-
 			// Number of nodes.
 			final int networkSize = input.readInt();
 			final Graph graph = new Graph(new ArrayList<SimpleNode>(networkSize));
 
 			// Nodes.
 			for (int i = 0; i < networkSize; i++) {
-				SimpleNode node = (SimpleNode)input.readObject();
-				node.setRand(random);
-				node.index = i;
-				graph.nodes.add(node);
+				graph.nodes.add(new SimpleNode(input, i, random));
 			}
 
 			final int writtenConnections = input.readInt();
@@ -235,19 +213,14 @@ public class Graph {
 				final int from = input.readInt();
 				final int to = input.readInt();
 				//System.out.println(from + " " + to);
-				graph.nodes.get(from).connect(graph.nodes.get(to));
+				graph.nodes.get(from).connectOutgoing(graph.nodes.get(to));
 			}
 
 			return graph;
 		} catch (IOException e) {
-			System.err.println("Could not read from " + source.getAbsolutePath() + ":");
+			System.err.println("Could not read from input stream:");
 			e.printStackTrace();
 			System.exit(4);
-			return null;
-		} catch (ClassNotFoundException e) {
-			System.err.println("Unexpected class in graph:");
-			e.printStackTrace();
-			System.exit(5);
 			return null;
 		}
 	}

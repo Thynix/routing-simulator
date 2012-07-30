@@ -1,13 +1,12 @@
 package org.freenetproject.routing_simulator.graph.node;
 
 import org.freenetproject.routing_simulator.PathFolding;
-import org.freenetproject.routing_simulator.util.lru.LRUQueue;
 import org.freenetproject.routing_simulator.graph.Location;
+import org.freenetproject.routing_simulator.util.lru.LRUQueue;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.ListIterator;
 import java.util.Random;
@@ -15,34 +14,31 @@ import java.util.Random;
 /**
  * A simple node model.  Has a location and a set of connections.
  */
-public class SimpleNode implements Serializable {
-	private double location;
-	private ArrayList<SimpleNode> connections;
-	private int desiredDegree;
+public class SimpleNode {
+	private final double location;
+	private final ArrayList<SimpleNode> connections;
+	private final int desiredDegree;
 
-	private Random rand;
+	private final Random rand;
 
 	/**Index of this node in the graph; purely for convenience, not used in any decision making.*/
-	public int index;
+	public final int index;
 
-	private LRUQueue<SimpleNode> lruQueue;
+	private final LRUQueue<SimpleNode> lruQueue;
 
-	private void writeObject(ObjectOutputStream out) throws IOException {
+	public void write(DataOutputStream out) throws IOException {
 		out.writeDouble(location);
-		out.writeInt(index);
 		out.writeInt(desiredDegree);
 	}
 
-	private void readObject(ObjectInputStream in) throws IOException, ClassNotFoundException {
+	public SimpleNode(DataInputStream in, int index, Random rand) throws IOException {
 		location = in.readDouble();
+		desiredDegree = in.readInt();
+
 		//Connections must be initialized later from the network view where other nodes are visible.
 		connections = new ArrayList<SimpleNode>();
-		index = in.readInt();
+		this.index = index;
 		lruQueue = new LRUQueue<SimpleNode>();
-		desiredDegree = in.readInt();
-	}
-
-	public void setRand(Random rand) {
 		this.rand = rand;
 	}
 
@@ -51,19 +47,19 @@ public class SimpleNode implements Serializable {
 	 *
 	 * @param location The routing location of this node.
 	 * @param rand Used for random numbers in decision making.
-	 * @param candidate Desired degree of the node. TODO: change name to desiredDegree
+	 * @param desiredDegree Desired degree of the node.
 	 */
-	public SimpleNode(double location, Random rand, int candidate) {
+	public SimpleNode(double location, Random rand, int desiredDegree, int index) {
 		if (location < 0.0 || location >= 1.0)
 			throw new IllegalArgumentException("Location must be in [0,1).");
 
 		this.location = location;
 		connections = new ArrayList<SimpleNode>();
 		this.rand = rand;
-		index = -1;
+		this.index = index;
 		lruQueue = new LRUQueue<SimpleNode>();
-		if (candidate < 1) desiredDegree = 1;
-		else desiredDegree = candidate;
+		if (desiredDegree < 1) this.desiredDegree = 1;
+		else this.desiredDegree = desiredDegree;
 	}
 
 	/**
@@ -337,9 +333,7 @@ public class SimpleNode implements Serializable {
 	}
 
 	/**
-	 * Compute the degree (number of connections) of this node.
-	 *
-	 * @return Degree of this node
+	 * @return Number of connections outgoing from this node.
 	 */
 	public int degree() {
 		return connections.size();

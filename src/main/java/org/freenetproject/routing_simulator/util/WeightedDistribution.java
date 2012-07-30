@@ -1,10 +1,9 @@
 package org.freenetproject.routing_simulator.util;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
+import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -28,15 +27,15 @@ public class WeightedDistribution {
 	/**
 	 * Replicates given distribution of values.
 	 * TODO: Does Java have templating? Limiting to returning integers.
-	 * @param filename file to read from. Format "[number] [number of occurrences]"
+	 * @param input stream to read from. Format "[number] [number of occurrences]\n"
 	 * @param random Used for random values.
 	 */
-	public WeightedDistribution(String filename, Random random) {
+	public WeightedDistribution(DataInputStream input, Random random) {
 		this.events = new ArrayList<Event>();
 		this.random = random;
 		int tentativeTotal = 0;
 		try {
-			BufferedReader reader = new BufferedReader(new FileReader(new File(filename)));
+			BufferedReader reader = new BufferedReader(new InputStreamReader(input));
 
 			String line;
 			//TODO: This seems like a C++ way of doing things. What's the Java way?
@@ -47,11 +46,6 @@ public class WeightedDistribution {
 			}
 
 			for (Event event : events) tentativeTotal += event.occurrences;
-		} catch (FileNotFoundException e) {
-			System.out.println(e);
-			System.out.println("Unable to open file \"" + filename + "\".");
-			//TODO: Is there better behavior?
-			System.exit(1);
 		} catch (IOException e) {
 			System.out.println(e);
 			//TODO: Should these be thrown upwards or what?
@@ -70,17 +64,5 @@ public class WeightedDistribution {
 		for (; rand > sum; i++) sum += events.get(i).occurrences;
 		//i could have been incremented past end of array if the loop executed.
 		return events.get(i == 0 ? 0 : i - 1).value;
-	}
-
-	public static void main(String[] args) {
-		WeightedDistribution distribution = new WeightedDistribution("../../stats/peerDist_1407.dat", new java.util.Random());
-		//TODO: Actual maximum
-		int[] hist = new int[51];
-		for (int i = 0; i < 40000; i++) {
-			hist[distribution.randomValue()]++;
-		}
-		for (int i = 0; i < hist.length; i++) {
-			System.out.println( i + " " + hist[i]);
-		}
 	}
 }

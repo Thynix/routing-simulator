@@ -2,6 +2,7 @@ package org.freenetproject.routing_simulator.graph.degree;
 
 import org.freenetproject.routing_simulator.util.WeightedDistribution;
 
+import java.io.DataInputStream;
 import java.util.Random;
 
 /**
@@ -10,8 +11,8 @@ import java.util.Random;
 public class ConformingDegreeSource implements DegreeSource {
 	private final WeightedDistribution distribution;
 
-	public ConformingDegreeSource(String filename, Random random) {
-		this.distribution  = new WeightedDistribution(filename, random);
+	public ConformingDegreeSource(DataInputStream input, Random random) {
+		this.distribution  = new WeightedDistribution(input, random);
 	}
 
 	@Override

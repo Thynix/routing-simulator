@@ -19,7 +19,10 @@ import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 import org.freenetproject.routing_simulator.util.ArrayStats;
 import org.freenetproject.routing_simulator.util.MersenneTwister;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -64,25 +67,45 @@ public class RoutingSim {
 	/**
 	 * Attempts to open the given path for writing.
 	 * @param path File to open.
-	 * @return If successful, an output stream for the file. If not, outputs a message and returns null.
+	 * @return An output stream for the file.
 	 */
-	private static FileOutputStream writableFile(String path) {
+	private static DataOutputStream writableFile(String path) throws FileNotFoundException {
 		try {
-			return new FileOutputStream(new File(path));
+			return new DataOutputStream(new FileOutputStream(new File(path)));
 		} catch (FileNotFoundException e) {
 			System.out.println("Unable to open \"" + path + "\" for output:");
 			e.printStackTrace();
-			return null;
+			throw e;
 		}
 	}
 
-	private static boolean readableFile(String path) {
+	private static DataInputStream readableFile(String path) throws FileNotFoundException {
 		File file = new File(path);
-		if (!file.exists() || !file.canRead() || !file.isFile()) {
+		try {
+			return new DataInputStream(new FileInputStream(file));
+		} catch (FileNotFoundException e) {
 			System.out.println("Cannot read \"" + file.getAbsolutePath() + "\" as a file.");
-			return false;
+			throw e;
 		}
-		return true;
+	}
+
+	/**
+	 * Wrapper for readableFile.
+	 * @return null if the option is not specified, or a stream.
+	 * @throws FileNotFoundException if the option was specified but the file was not found.
+	 */
+	private static DataInputStream readableFile(final String option, final CommandLine cmd) throws FileNotFoundException {
+		if (!cmd.hasOption(option)) return null;
+		return readableFile(cmd.getOptionValue(option));
+	}
+
+	/**
+	 * Wrapper for writableFile.
+	 * @return
+	 */
+	private static DataOutputStream writableFile(final String option, final CommandLine cmd) throws FileNotFoundException {
+		if (!cmd.hasOption(option)) return null;
+		return writableFile(cmd.getOptionValue(option));
 	}
 
 	/**
@@ -181,8 +204,8 @@ public class RoutingSim {
 			return;
 		}
 
-		if (cmd.hasOption("route") && !(cmd.hasOption("output-route") && cmd.hasOption("fold-policy") && cmd.hasOption("output-hops"))) {
-			System.out.println("--route was specified, but not all of its required parameters: --output-route, --fold-policy, --output-hops.");
+		if (cmd.hasOption("route") && !cmd.hasOption("fold-policy")) {
+			System.out.println("--route was specified, but not --fold-policy.");
 			return;
 		}
 		if (cmd.hasOption("probe") && !cmd.hasOption("output-probe")) {
@@ -220,42 +243,35 @@ public class RoutingSim {
 
 		//Check for problems with specified paths.
 		//Check if input files can be read.
-		if (cmd.hasOption("conforming-degree") && ! readableFile(cmd.getOptionValue("conforming-degree"))) System.exit(9);
-		if (cmd.hasOption("conforming-link") && ! readableFile(cmd.getOptionValue("conforming-link"))) System.exit(10);
-		if (cmd.hasOption("load-graph") && !readableFile(cmd.getOptionValue("load-graph"))) System.exit(11);
+		final DataInputStream degreeInput, linkInput, graphInput;
+		try {
+			degreeInput = readableFile("conforming-degree", cmd);
+			linkInput = readableFile("conforming-link", cmd);
+			graphInput = readableFile("load-graph", cmd);
+		} catch (FileNotFoundException e) {
+			System.exit(1);
+			return;
+		}
 
 		//Check if output paths are directories that can be written to, and create them if they do not exist.
 		if (cmd.hasOption("output-probe") && !writableDirectory(cmd.getOptionValue("output-probe"))) System.exit(12);
 
 		//Check that output files exist and are writable or can be created.
-		FileOutputStream degreeOutput = null, linkOutput = null;
-		final File graphOutput;
-		if (cmd.hasOption("output-degree") && (degreeOutput = writableFile(cmd.getOptionValue("output-degree"))) == null ) System.exit(13);
-		if (cmd.hasOption("output-link") && (linkOutput = writableFile(cmd.getOptionValue("output-link"))) == null) System.exit(14);
-		if (cmd.hasOption("save-graph")) {
-			graphOutput = new File(cmd.getOptionValue("save-graph"));
-			//Just check for this one; saving takes a File. Better to check here than after simulation runs.
-			try {
-				FileOutputStream outputStream = new FileOutputStream(graphOutput);
-				outputStream.close();
-			} catch (FileNotFoundException e) {
-				System.err.println("Could not open saved graph:");
-				e.printStackTrace();
-				System.exit(7);
-			} catch (IOException e) {
-				System.err.println("Unexpected IOException:");
-				e.printStackTrace();
-				System.exit(8);
-			}
-		} else {
-			graphOutput = null;
+		final DataOutputStream degreeOutput, linkOutput, graphOutput;
+		try {
+			degreeOutput = writableFile("output-degree", cmd);
+			linkOutput = writableFile("output-link", cmd);
+			graphOutput = writableFile("save-graph", cmd);
+		} catch (FileNotFoundException e) {
+			System.exit(2);
+			return;
 		}
 
 		//TODO: What is a sink policy? Looks like 2 is used as a hard-coded second dimension in Request, so this isn't currently a good configuration target.
 		int[] sinkPolsUsed = {0, 1};
 		PrintStream[] histogramOutput = new PrintStream[sinkPolsUsed.length];
 		for (int aSinkPolsUsed : sinkPolsUsed) {
-			histogramOutput[i] = new PrintStream(writableFile(cmd.getOptionValue("output-hops")+ "-" + sinkPolsUsed[i]));
+			//histogramOutput[i] = new PrintStream(writableFile(cmd.getOptionValue("output-hops")+ "-" + sinkPolsUsed[i]));
 		}
 
 		int nRequests = cmd.hasOption("route") ? Integer.valueOf(cmd.getOptionValue("route")) : 4000;
@@ -287,20 +303,20 @@ public class RoutingSim {
 		// Load the graph; otherwise generate.
 		Graph g;
 		if (cmd.hasOption("load-graph")) {
-			g = Graph.read(new File(cmd.getOptionValue("load-graph")), rand);
+			g = Graph.read(graphInput, rand);
 		} else {
 			final int networkSize = Integer.valueOf(cmd.getOptionValue("size"));
 
 			final DegreeSource degreeSource;
-			if (cmd.hasOption("conforming-degree")) degreeSource = new ConformingDegreeSource(cmd.getOptionValue("conforming-degree"), rand);
+			if (cmd.hasOption("conforming-degree")) degreeSource = new ConformingDegreeSource(degreeInput, rand);
 			else if (cmd.hasOption("poisson-degree")) degreeSource = new PoissonDegreeSource(Integer.valueOf(cmd.getOptionValue("poisson-degree")));
 			else if (cmd.hasOption("fixed-degree")) degreeSource = new FixedDegreeSource(Integer.valueOf(cmd.getOptionValue("fixed-degree")));
 			else /* if (cmd.hasOption("sandberg-graph") */ degreeSource = new FixedDegreeSource(0);
 
-			final ArrayList<SimpleNode> nodes = Graph.generateNodes(networkSize, rand, true, degreeSource);
+			final ArrayList<SimpleNode> nodes = Graph.generateNodes(networkSize, rand, cmd.hasOption("fast-generation"), degreeSource);
 
 			final LinkLengthSource linkLengthSource;
-			if (cmd.hasOption("conforming-link")) linkLengthSource = new ConformingLinkSource(cmd.getOptionValue("conforming-link"), rand, nodes);
+			if (cmd.hasOption("conforming-link")) linkLengthSource = new ConformingLinkSource(linkInput, rand, nodes);
 			else if (cmd.hasOption("ideal-link")) linkLengthSource = new KleinbergLinkSource(rand, nodes);
 			else if (cmd.hasOption("flat-link")) linkLengthSource = new UniformLinkSource(rand, nodes);
 			else throw new IllegalStateException("Link length distribution undefined.");
@@ -486,7 +502,7 @@ public class RoutingSim {
 
 	private static void simulate(Graph g, Random rand, int nRequests, final String outputPath,
 	                             final PathFolding policy, final PrintStream[] histogramOutput) {
-		File outputFile = new File(outputPath);
+		/*File outputFile = new File(outputPath);
 		PrintStream stream = null;
 		try {
 			stream = new PrintStream(outputFile);
@@ -494,7 +510,7 @@ public class RoutingSim {
 			System.err.println("Cannot open file \"" + outputPath + ": " + e);
 			System.exit(1);
 		}
-		stream.println("Routing " + nRequests + " requests on network of size " + g.size() + ".");
+		stream.println("Routing " + nRequests + " requests on network of size " + g.size() + ".");*/
 		long startTime = System.currentTimeMillis();
 
 
@@ -717,9 +733,9 @@ public class RoutingSim {
 				stream.println();
 			}
 		}*/
-		stream.println("Time taken (ms): " + (System.currentTimeMillis() - startTime));
-		stream.print("Summary:\t" + g.size() + "\t" + g.nEdges() + "\t" + g.minDegree() + "\t");
-		stream.print(g.maxDegree() + "\t" + Math.sqrt(g.degreeVariance()) + "\t" + g.meanLocalClusterCoeff() + "\t");
+		//stream.println("Time taken (ms): " + (System.currentTimeMillis() - startTime));
+		//stream.print("Summary:\t" + g.size() + "\t" + g.nEdges() + "\t" + g.minDegree() + "\t");
+		//stream.print(g.maxDegree() + "\t" + Math.sqrt(g.degreeVariance()) + "\t" + g.meanLocalClusterCoeff() + "\t");
 		/*stream.print(g.globalClusterCoeff() + "\t" + nRequests * nIntersectTests + "\t" + nPreciseRouted + "\t");
 		stream.print(printArraySummary(decrements, false));
 		if (nIntersectTests > 1) {
@@ -727,7 +743,7 @@ public class RoutingSim {
 		}
 		stream.println();
 		stream.println();*/
-		stream.println();
+		//stream.println();
 	}
 
 	/**
