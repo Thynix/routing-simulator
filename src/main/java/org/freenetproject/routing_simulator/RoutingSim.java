@@ -254,7 +254,7 @@ public class RoutingSim {
 		//TODO: What is a sink policy? Looks like 2 is used as a hard-coded second dimension in Request, so this isn't currently a good configuration target.
 		int[] sinkPolsUsed = {0, 1};
 		PrintStream[] histogramOutput = new PrintStream[sinkPolsUsed.length];
-		for (int i = 0; i < sinkPolsUsed.length; i++) {
+		for (int aSinkPolsUsed : sinkPolsUsed) {
 			histogramOutput[i] = new PrintStream(writableFile(cmd.getOptionValue("output-hops")+ "-" + sinkPolsUsed[i]));
 		}
 
@@ -763,14 +763,14 @@ public class RoutingSim {
 
 	public static double mean(int[] a) {
 		double m = 0.0;
-		for (int i = 0; i < a.length; i++) m += a[i];
+		for (int anA : a) m += anA;
 		m /= a.length;
 		return m;
 	}
 
 	public static double sumSquares(int[] a) {
 		double ss = 0.0;
-		for (int i = 0; i < a.length; i++) ss += ((double)a[i])*((double)a[i]);
+		for (int anA : a) ss += ((double) anA) * ((double) anA);
 		return ss;
 	}
 
@@ -831,14 +831,14 @@ public class RoutingSim {
 
 	public static double mean(double[] a) {
 		double m = 0.0;
-		for (int i = 0; i < a.length; i++) m += a[i];
+		for (double anA : a) m += anA;
 		m /= a.length;
 		return m;
 	}
 
 	public static double sumSquares(double[] a) {
 		double ss = 0.0;
-		for (int i = 0; i < a.length; i++) ss += a[i] * a[i];
+		for (double anA : a) ss += anA * anA;
 		return ss;
 	}
 

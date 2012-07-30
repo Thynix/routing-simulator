@@ -473,8 +473,8 @@ public class SimpleNode implements Serializable {
 	 */
 	public double logSumLinkLengths(double l) {
 		double s = 0.0;
-		for (int i = 0; i < connections.size(); i++) {
-			s += Math.log(connections.get(i).distanceToLoc(l));
+		for (SimpleNode connection : connections) {
+			s += Math.log(connection.distanceToLoc(l));
 		}
 		return s;
 	}

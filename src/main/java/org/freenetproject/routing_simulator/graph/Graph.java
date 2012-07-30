@@ -388,8 +388,8 @@ public class Graph {
 		long sumSquareDegrees = 0;
 		long n = nodes.size();
 		if (n == 0) return 0;
-		for (int i = 0; i < n; i++) {
-			int d = nodes.get(i).degree();
+		for (SimpleNode node : nodes) {
+			int d = node.degree();
 			sumDegrees += d;
 			sumSquareDegrees += d * d;
 		}
@@ -411,8 +411,8 @@ public class Graph {
 		double sumCoeff = 0.0;
 		int n = nodes.size();
 		if (n == 0) return 0;
-		for (int i = 0; i < n; i++) {
-			sumCoeff += nodes.get(i).localClusterCoeff();
+		for (SimpleNode node : nodes) {
+			sumCoeff += node.localClusterCoeff();
 		}
 		double mean = sumCoeff / n;
 		assert mean >= 0.0 && mean <= 1.0;
@@ -443,8 +443,7 @@ public class Graph {
 		int nClosed = 0;
 		int nTotal = 0;
 
-		for (int i = 0; i < nodes.size(); i++) {
-			SimpleNode n = nodes.get(i);
+		for (SimpleNode n : nodes) {
 			int degree = n.degree();
 			nClosed += n.closedTriplets();
 			nTotal += (degree * (degree - 1)) / 2;
