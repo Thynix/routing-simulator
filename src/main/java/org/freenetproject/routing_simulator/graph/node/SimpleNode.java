@@ -450,32 +450,4 @@ public class SimpleNode implements Serializable {
 	public SimpleNode randomWalk(int hops, boolean uniform, Random rand) {
 		return randomWalkList(hops, uniform, rand).get(hops);
 	}
-
-	/**
-	 * Attempt a M-H type location swap with the target.
-	 *
-	 * @param target The node to possibly swap locations with
-	 * @return Whether the swap was actually performed
-	 */
-	public boolean attemptSwap(SimpleNode target) {
-		double log = logSumLinkLengths(location) + target.logSumLinkLengths(target.location);
-		log = log - logSumLinkLengths(target.location) + target.logSumLinkLengths(location);
-		double acceptProb = Math.exp(log);
-		return false;
-	}
-
-	/**
-	 * Return the sum of the natural logarithms of the lengths this node's
-	 * connections would be, if it had location l.
-	 *
-	 * @param l Hypothetical location for this node
-	 * @return Log sum of link lengths
-	 */
-	public double logSumLinkLengths(double l) {
-		double s = 0.0;
-		for (SimpleNode connection : connections) {
-			s += Math.log(connection.distanceToLoc(l));
-		}
-		return s;
-	}
 }

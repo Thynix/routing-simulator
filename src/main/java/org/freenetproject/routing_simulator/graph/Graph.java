@@ -461,36 +461,6 @@ public class Graph {
 		return ((double)(nClosed)) / ((double)(nTotal));
 	}
 
-	/**
-	 * Perform the darknet location swapping algorithm repeatedly.
-	 *
-	 * @param nAttempts Number of swaps to attempt
-	 * @param uniform Whether to use centralized uniform probabilities or decentralized walks
-	 * @param walkDist Number of hops to walk if using decentralized walks
-	 * @param uniformWalk Whether to walk uniformly or attempt to correct for high degree node bias
-	 * @param rand Randomness source
-	 * @return Number of swap requests accepted
-	 */
-	public int darknetSwap(int nAttempts, boolean uniform, int walkDist, boolean uniformWalk, Random rand) {
-		int nAccepted = 0;
-		for (int i = 0; i < nAttempts; i++) {
-			SimpleNode origin;
-			SimpleNode target;
-			origin = nodes.get(rand.nextInt(nodes.size()));
-			if (uniform) {
-				//centralized uniform swapping -- choose both nodes from a flat distribution
-				target = nodes.get(rand.nextInt(nodes.size()));
-			} else {
-				//decentralized random walk
-				int hops = walkDist;
-				if (!uniformWalk) hops *= 2;	//correct for fact that some hops get rejected
-				target = origin.randomWalk(hops, uniformWalk, rand);
-			}
-			if (origin.attemptSwap(target)) nAccepted++;
-		}
-		return nAccepted;
-	}
-
 	private int[] randomWalkDistTest(int nWalks, int hopsPerWalk, boolean uniform, Random rand) {
 		int[] choiceFreq = new int[size()];
 		int dupCount = 0;
