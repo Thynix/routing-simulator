@@ -4,7 +4,6 @@ import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Random;
 
 /**
@@ -32,7 +31,7 @@ public abstract class LinkLengthSource {
 	/**
 	 * Stores a list of the distances to each other node for every node submitted with a peer query.
 	 */
-	private final HashMap<SimpleNode, ArrayList<DistanceEntry>> linkLengths;
+	private final ArrayList<ArrayList<DistanceEntry>> linkLengths;
 
 	/**
 	 * The nodes which make up the network being connected.
@@ -46,11 +45,14 @@ public abstract class LinkLengthSource {
 	LinkLengthSource(Random random, ArrayList<SimpleNode> nodes) {
 		this.random = random;
 		this.nodes = nodes;
+		assert nodes.size() > 1;
 		/*
 		 * TODO: If memory is a concern and a subclass is not using closestTo() it could set a flag to
 		 * initialize linkLengths to a capacity of 0.
 		 */
-		this.linkLengths = new HashMap<SimpleNode, ArrayList<DistanceEntry>>(nodes.size());
+		this.linkLengths = new ArrayList<ArrayList<DistanceEntry>>(nodes.size());
+		// Each node maintains a list of the distance to all other nodes. -1 is to exclude itself.
+		for (int i = 0; i < nodes.size(); i++) linkLengths.add(new ArrayList<DistanceEntry>(nodes.size() - 1));
 	}
 
 	/**
@@ -61,10 +63,9 @@ public abstract class LinkLengthSource {
 	 * @return the node from the network providing the link closest to the specified length.
 	 */
 	SimpleNode closestTo(final SimpleNode from, final double length) {
-		assert nodes.size() > 1;
 		// Check if the link lengths have already been computed, and if not compute them.
-		if (!linkLengths.containsKey(from)) {
-			final ArrayList<DistanceEntry> distances = new ArrayList<DistanceEntry>(nodes.size() - 1);
+		if (linkLengths.get(from.index).isEmpty()) {
+			final ArrayList<DistanceEntry> distances = linkLengths.get(from.index);
 			for (SimpleNode peer : nodes) {
 				if (peer == from) continue;
 				distances.add(new DistanceEntry(from.distanceTo(peer), peer));
@@ -72,8 +73,8 @@ public abstract class LinkLengthSource {
 			Collections.sort(distances);
 		}
 
-		assert linkLengths.containsKey(from);
-		final ArrayList<DistanceEntry> distances = linkLengths.get(from);
+		final ArrayList<DistanceEntry> distances = linkLengths.get(from.index);
+		assert !distances.isEmpty();
 		int index = Collections.binarySearch(distances, new DistanceEntry(length, null));
 		// Choose closest match. If not found index = -(insertion point) - 1, so insertion point = -1 - index.
 		if (index < 0) index = -1 - index;
