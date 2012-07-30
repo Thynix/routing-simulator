@@ -56,7 +56,7 @@ public class ArrayStats {
 		computeMean();
 		computeMoments();
 		computeCumulants();
-		assert valid == false;
+		assert !valid;
 		valid = true;
 	}
 
