@@ -337,14 +337,23 @@ public class Graph {
 	public int nEdges() {
 		// Indexes in <lesser, greater> order of a connection.
 		HashSet<Pair<Integer, Integer>> connections = new HashSet<Pair<Integer, Integer>>();
+		int directed = 0;
 
 		for (SimpleNode origin : nodes) {
 			for (SimpleNode peer : origin.getConnections()) {
-				if (origin.index < peer.index) connections.add(new Pair<Integer, Integer>(origin.index, peer.index));
-				else connections.add(new Pair<Integer, Integer>(peer.index, origin.index));
+				/*
+				 * If the set already contained the element the connection is two mutual directed edges,
+				 * which in this case is considered one directed edge.
+				 */
+				if (origin.index < peer.index) {
+					if (!connections.add(new Pair<Integer, Integer>(origin.index, peer.index))) directed++;
+				} else {
+					if (!connections.add(new Pair<Integer, Integer>(peer.index, origin.index))) directed++;
+				}
 			}
 		}
 
+		System.out.println("Out of the edges " + directed + " are undirected.");
 		return connections.size();
 	}
 
