@@ -23,7 +23,7 @@ public class KleinbergLinkSource extends LinkLengthSource {
 		/* Build probability array if it does not already exist.
 		 *
 		 * Find normalizing constant for this node - sum distance probabilities so that they
-		 * they are in increasing order and may be searched through to find the closest link.
+		 * they are in non-decreasing order and may be searched through to find the closest link.
 		 * Note that this means here the probability is proportional to 1/distance.
 		 * sumProb is a non-normalized CDF of probabilities by node index.
 		 */
