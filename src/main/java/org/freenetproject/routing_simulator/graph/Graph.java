@@ -116,26 +116,16 @@ public class Graph {
 	public static Graph connectGraph(ArrayList<SimpleNode> nodes, Random rand, LinkLengthSource linkLengthSource) {
 		Graph g = new Graph(nodes);
 
-		DistanceEntry[] distances = new DistanceEntry[nodes.size()];
-		for (int i = 0; i < nodes.size(); i++) {
-			SimpleNode src = g.nodes.get(i);
+		SimpleNode destination;
+		for (SimpleNode src : nodes) {
 			if (src.atDegree()) continue;
-			SimpleNode dest;
-
-			// Fill distance entry array.
-			for (int j = 0; j < nodes.size(); j++) {
-				distances[j] = new DistanceEntry(Location.distance(src.getLocation(), g.nodes.get(j).getLocation()), j);
-			}
-
-			//System.out.println("distances size is " + );
-			Arrays.sort(distances);
 
 			// Make connections until at desired degree.
 			while (!src.atDegree()) {
-				dest = linkLengthSource.getPeer(src);
-				if (src == dest || src.isConnected(dest) ||
-				    (dest.atDegree() && rand.nextDouble() < rejectProbability)) continue;
-				src.connect(dest);
+				destination = linkLengthSource.getPeer(src);
+				if (src == destination || src.isConnected(destination) ||
+				    (destination.atDegree() && rand.nextDouble() < rejectProbability)) continue;
+				src.connect(destination);
 			}
 		}
 
