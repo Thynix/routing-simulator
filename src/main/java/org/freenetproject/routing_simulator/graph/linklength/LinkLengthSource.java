@@ -12,7 +12,7 @@ import java.util.Random;
  */
 public abstract class LinkLengthSource {
 
-	protected static class DistanceEntry implements Comparable<DistanceEntry> {
+	static class DistanceEntry implements Comparable<DistanceEntry> {
 		public final double distance;
 		public final SimpleNode node;
 
@@ -27,7 +27,7 @@ public abstract class LinkLengthSource {
 		}
 	}
 
-	protected final Random random;
+	final Random random;
 
 	/**
 	 * stores a list of the distances to each other node for every node submitted with a peer query.
@@ -37,13 +37,13 @@ public abstract class LinkLengthSource {
 	/**
 	 * The nodes which make up the network being connected.
 	 */
-	protected final ArrayList<SimpleNode> nodes;
+	final ArrayList<SimpleNode> nodes;
 
 	/**
 	 * @param random To make decisions.
 	 * @param nodes Nodes which make up the network being wired.
 	 */
-	public LinkLengthSource(Random random, ArrayList<SimpleNode> nodes) {
+	LinkLengthSource(Random random, ArrayList<SimpleNode> nodes) {
 		this.random = random;
 		this.nodes = nodes;
 		/*
@@ -60,7 +60,7 @@ public abstract class LinkLengthSource {
 	 * @param length desired link length.
 	 * @return the node from the network providing the link closest to the specified length.
 	 */
-	protected SimpleNode closestTo(final SimpleNode from, final double length) {
+	SimpleNode closestTo(final SimpleNode from, final double length) {
 		assert nodes.size() > 1;
 		// Check if the link lengths have already been computed, and if not compute them.
 		if (!linkLengths.containsKey(from)) {

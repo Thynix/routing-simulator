@@ -140,7 +140,7 @@ public class ArrayStats {
 	 * @param n The moment to find
 	 * @return The nth standardized moment of the array
 	 */
-	public double standardMoment(int n) {
+	private double standardMoment(int n) {
 		if (n < 0) throw new IllegalArgumentException();
 		if (n == 0) return 1.0;
 		if (n == 1) return 0.0;

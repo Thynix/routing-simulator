@@ -34,7 +34,7 @@ import java.util.Random;
  */
 public class RoutingSim {
 	//generic output format
-	static final DecimalFormat outputFormat = new DecimalFormat("0.000000");
+	private static final DecimalFormat outputFormat = new DecimalFormat("0.000000");
 
 	/**
 	 * Checks that a path is a directory which can be written to, and attempts to create it if it does not exist.
@@ -413,7 +413,7 @@ public class RoutingSim {
 		}
 	}
 
-	public static void probeDistribution(Graph g, Random rand, int maxHops, boolean quiet, boolean verbose, final String containingPath, boolean uniform) {
+	private static void probeDistribution(Graph g, Random rand, int maxHops, boolean quiet, boolean verbose, final String containingPath, boolean uniform) {
 		File output = new File(containingPath);
 		assert output.isDirectory();
 		if (!output.exists()) {
@@ -484,8 +484,8 @@ public class RoutingSim {
 		}
 	}
 
-	public static void simulate(Graph g, Random rand, int nRequests, final String outputPath,
-	                            final PathFolding policy, final PrintStream[] histogramOutput) {
+	private static void simulate(Graph g, Random rand, int nRequests, final String outputPath,
+	                             final PathFolding policy, final PrintStream[] histogramOutput) {
 		File outputFile = new File(outputPath);
 		PrintStream stream = null;
 		try {
@@ -761,26 +761,26 @@ public class RoutingSim {
 		return summary.toString();
 	}
 
-	public static double mean(int[] a) {
+	private static double mean(int[] a) {
 		double m = 0.0;
 		for (int anA : a) m += anA;
 		m /= a.length;
 		return m;
 	}
 
-	public static double sumSquares(int[] a) {
+	private static double sumSquares(int[] a) {
 		double ss = 0.0;
 		for (int anA : a) ss += ((double) anA) * ((double) anA);
 		return ss;
 	}
 
-	public static double variance(int[] a) {
+	private static double variance(int[] a) {
 		double ss = sumSquares(a);
 		double m = mean(a);
 		return (ss / a.length) - m * m;
 	}
 
-	public static double stdDev(int[] a) {
+	private static double stdDev(int[] a) {
 		return Math.sqrt(variance(a));
 	}
 
@@ -788,7 +788,7 @@ public class RoutingSim {
 	 * @param a
 	 * @return Whether the array is sorted in non-decreasing order.
 	 */
-	public static boolean isSorted(int[] a) {
+	private static boolean isSorted(int[] a) {
 		for (int i = 0; i < a.length - 1; i++) if (a[i] > a[i+1]) return false;
 		return true;
 	}
@@ -829,30 +829,30 @@ public class RoutingSim {
 		return s;
 	}
 
-	public static double mean(double[] a) {
+	private static double mean(double[] a) {
 		double m = 0.0;
 		for (double anA : a) m += anA;
 		m /= a.length;
 		return m;
 	}
 
-	public static double sumSquares(double[] a) {
+	private static double sumSquares(double[] a) {
 		double ss = 0.0;
 		for (double anA : a) ss += anA * anA;
 		return ss;
 	}
 
-	public static double variance(double[] a) {
+	private static double variance(double[] a) {
 		double ss = sumSquares(a);
 		double m = mean(a);
 		return (ss / a.length) - m * m;
 	}
 
-	public static double stdDev(double[] a) {
+	private static double stdDev(double[] a) {
 		return Math.sqrt(variance(a));
 	}
 
-	public static boolean isSorted(double[] a) {
+	private static boolean isSorted(double[] a) {
 		for (int i = 0; i < a.length - 1; i++) if (a[i] > a[i+1]) return false;
 		return true;
 	}

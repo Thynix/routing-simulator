@@ -18,7 +18,7 @@ import java.util.Random;
 public class SimpleNode implements Serializable {
 	private double location;
 	private ArrayList<SimpleNode> connections;
-	public int desiredDegree;
+	private int desiredDegree;
 
 	private Random rand;
 
@@ -109,7 +109,7 @@ public class SimpleNode implements Serializable {
 	 * @param acceptanceRate probability of accepting the fold.
 	 * @return whether the offered connection was accepted.
 	 */
-	public boolean offerPathFold(final SimpleNode peer, double acceptanceRate) {
+	private boolean offerPathFold(final SimpleNode peer, double acceptanceRate) {
 		// Do not path fold to self.
 		if (peer == this) return false;
 		// Do not path fold to a node which is already connected. TODO: Connections undirected - both should be true if either is.

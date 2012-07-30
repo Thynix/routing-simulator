@@ -22,7 +22,7 @@ public class WeightedDistribution {
 	}
 
 	private final ArrayList<Event> events;
-	public final int totalOccurances;
+	private final int totalOccurances;
 	private final Random random;
 
 	/**

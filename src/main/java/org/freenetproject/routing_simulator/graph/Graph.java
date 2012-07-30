@@ -26,7 +26,7 @@ import java.util.Random;
  * Functions to evaluate the graph topology are also provided.
  */
 public class Graph {
-	private ArrayList<SimpleNode> nodes;
+	private final ArrayList<SimpleNode> nodes;
 
 	/**
 	 * Probability of not making a connection with a peer which has its desired degree.
@@ -419,7 +419,7 @@ public class Graph {
 		return mean;
 	}
 
-	public double[] localClusterCoeff() {
+	private double[] localClusterCoeff() {
 		int n = nodes.size();
 		double[] cc = new double[n];
 		for (int i = 0; i < n; i++) cc[i] = nodes.get(i).localClusterCoeff();
@@ -439,7 +439,7 @@ public class Graph {
 	 *
 	 * @return Global clustering coefficient
 	 */
-	public double globalClusterCoeff() {
+	private double globalClusterCoeff() {
 		int nClosed = 0;
 		int nTotal = 0;
 
@@ -482,7 +482,7 @@ public class Graph {
 		return nAccepted;
 	}
 
-	public int[] randomWalkDistTest(int nWalks, int hopsPerWalk, boolean uniform, Random rand) {
+	private int[] randomWalkDistTest(int nWalks, int hopsPerWalk, boolean uniform, Random rand) {
 		int[] choiceFreq = new int[size()];
 		int dupCount = 0;
 		for (int i = 0; i < nWalks; i++) {
