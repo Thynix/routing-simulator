@@ -394,8 +394,7 @@ public class Graph {
 			sumSquareDegrees += d * d;
 		}
 
-		double var = ((double)sumSquareDegrees)/((double)n) - ((double)(sumDegrees * sumDegrees))/((double)(n * n));
-		return var;
+		return ((double)sumSquareDegrees)/((double)n) - ((double)(sumDegrees * sumDegrees))/((double)(n * n));
 	}
 
 
