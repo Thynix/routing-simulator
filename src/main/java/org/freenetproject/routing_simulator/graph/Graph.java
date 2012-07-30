@@ -84,9 +84,11 @@ public class Graph {
 	/**
 	 * Connects a directed graph with lattice links between X and X - 1 mod N.
 	 * Each node has a single shortcut edge with an endpoint determined by the link length source.
+	 * @param nodes Nodes which make up the network.
 	 * @param linkLengthSource Provides shortcut endpoints.
+	 * @param shortcuts Number of shortcut edges. Must be non-negative.
 	 */
-	public static Graph connectSandberg(ArrayList<SimpleNode> nodes, LinkLengthSource linkLengthSource) {
+	public static Graph connectSandberg(ArrayList<SimpleNode> nodes, int shortcuts, LinkLengthSource linkLengthSource) {
 		Graph g = new Graph(nodes);
 
 		// Base graph: Edge from X to X - 1 mod N for all nodes 0 to N - 1.
@@ -100,10 +102,13 @@ public class Graph {
 		// Shortcuts: Edges from each node to an endpoint.
 		for (SimpleNode origin : g.nodes) {
 			SimpleNode endpoint;
+			// -1 to account for the single lattice edge.
+			while (origin.degree() - 1 < shortcuts) {
 			do {
 				endpoint = linkLengthSource.getPeer(origin);
 			} while (origin.isConnected(endpoint));
 			origin.connectOutgoing(endpoint);
+			}
 		}
 
 		return g;

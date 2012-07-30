@@ -174,13 +174,16 @@ public class SimpleNode implements Serializable {
 	 * @return whether the fold was executed.
 	 */
 	private boolean offerShortcutFold(final SimpleNode endpoint, double acceptanceRate) {
+		//TODO: connections size is number of shortcuts + 1 (1 for the lattice link)
+		//assert connections.size() == 2;
 		// Do not path fold to self.
 		if (endpoint == this) return false;
 		// Do not path fold to a node which is already connected.
 		if (this.connections.contains(endpoint)) return false;
 		if (rand.nextDouble() < (1.0 - acceptanceRate)) return false;
 
-		disconnectOutgoing(connections.get(1));
+		int disconnectedShortcut = rand.nextInt(connections.size() - 1) + 1;
+		disconnectOutgoing(connections.get(disconnectedShortcut));
 		connectOutgoing(endpoint);
 
 		return true;

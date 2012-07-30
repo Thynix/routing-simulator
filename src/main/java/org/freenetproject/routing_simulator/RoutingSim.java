@@ -114,7 +114,7 @@ public class RoutingSim {
 		options.addOption("f", "fast-generation", false, "If present, the simulator will assign locations with even spacing and, when using --ideal-link, take shortcuts to speed up graph generation.");
 		options.addOption("G", "load-graph", true, "Path to load a saved graph from.");
 		options.addOption("g", "save-graph", true, "Path to save a graph after simulation is run on it.");
-		options.addOption("s", "sandberg-graph", false, "Generate a directed graph with an edge from x to x -1 mod N for all x = 0 ... N - 1 as described in early section 2.2.1 in \"Searching in a Small World\".");
+		options.addOption("s", "sandberg-graph", true, "Generate a directed graph with an edge from x to x -1 mod N for all x = 0 ... N - 1 as described in early section 2.2.1 in \"Searching in a Small World.\" Takes the number of shortcuts to make; the paper specifies 1 shortcut.");
 
 		//Graphs: link length distribution
 		options.addOption("l", "ideal-link", false, "Kleinberg's ideal distribution: proportional to 1/d.");
@@ -306,7 +306,7 @@ public class RoutingSim {
 			else throw new IllegalStateException("Link length distribution undefined.");
 
 				if (cmd.hasOption("sandberg-graph")) {
-				g = Graph.connectSandberg(nodes, linkLengthSource);
+				g = Graph.connectSandberg(nodes, Integer.valueOf(cmd.getOptionValue("sandberg-graph")), linkLengthSource);
 				} else {
 				g = Graph.connectGraph(nodes, rand, linkLengthSource);
 			}
