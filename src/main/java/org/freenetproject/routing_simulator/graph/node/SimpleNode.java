@@ -233,14 +233,6 @@ public class SimpleNode implements Serializable {
 		}
 	}
 
-	public double[] getLinkLengths() {
-		double[] lengths = new double[connections.size()];
-		for (int i = 0; i < connections.size(); i++) {
-			lengths[i] = distanceToLoc(connections.get(i).getLocation());
-		}
-		return lengths;
-	}
-
 	/**
 	 * Routes greedily from this node to the node at the target location. Stops when hopsToLive hits zero, or the
 	 * local node is the closest to the target out of itself and all its neighbors. When that happens, it performs
