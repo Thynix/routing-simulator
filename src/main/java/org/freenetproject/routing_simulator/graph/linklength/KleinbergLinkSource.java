@@ -11,11 +11,11 @@ import java.util.Random;
  * Generates links conforming to the 1/d Kleinberg distribution.
  */
 public class KleinbergLinkSource extends LinkLengthSource {
-	private final HashMap<SimpleNode, double[]> sumProbs;
+	private final HashMap<SimpleNode, double[]> probabilityCDF;
 
 	public KleinbergLinkSource(Random random, ArrayList<SimpleNode> nodes) {
 		super(random, nodes);
-		sumProbs = new HashMap<SimpleNode, double[]>(nodes.size());
+		probabilityCDF = new HashMap<SimpleNode, double[]>(nodes.size());
 	}
 
 	@Override
@@ -27,7 +27,7 @@ public class KleinbergLinkSource extends LinkLengthSource {
 		 * Note that this means here the probability is proportional to 1/distance.
 		 * sumProb is a non-normalized CDF of probabilities by node index.
 		 */
-		if (!sumProbs.containsKey(from)) {
+		if (!probabilityCDF.containsKey(from)) {
 			final double[] sumProb = new double[nodes.size()];
 			double norm = 0.0;
 			for (int j = 0; j < nodes.size(); j++) {
@@ -38,9 +38,9 @@ public class KleinbergLinkSource extends LinkLengthSource {
 				//CDF must be non-decreasing
 				if (j > 0) assert sumProb[j] >= sumProb[j-1];
 			}
-			sumProbs.put(from, sumProb);
+			probabilityCDF.put(from, sumProb);
 		}
-		assert sumProbs.containsKey(from);
+		assert probabilityCDF.containsKey(from);
 
 		/*
 		 * sumProb is a CDF, so to weight by it pick a "Y value" and find closest index.
@@ -49,7 +49,7 @@ public class KleinbergLinkSource extends LinkLengthSource {
 		 * Because there are more nodes which match values in highly represented domains
 		 * (steeper in the CDF) a random value is more likely to be in those areas.
 		 */
-		final double[] sumProb = sumProbs.get(from);
+		final double[] sumProb = probabilityCDF.get(from);
 		final double norm = sumProb[sumProb.length - 1];
 
 		int idx;
