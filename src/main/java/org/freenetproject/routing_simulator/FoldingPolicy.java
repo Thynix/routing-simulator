@@ -1,6 +1,6 @@
 package org.freenetproject.routing_simulator;
 
-public enum PathFolding {
+public enum FoldingPolicy {
 	/**
 	 * Do not perform path folding.
 	 */

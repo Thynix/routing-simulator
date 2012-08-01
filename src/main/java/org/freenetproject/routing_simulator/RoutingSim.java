@@ -154,7 +154,7 @@ public class RoutingSim {
 		options.addOption("R", "route", true, "Simulate routing the given number of requests. Requires that --output-route, --fold-policy, and --output-hops be specified.");
 		options.addOption("o", "output-route", true, "File to which routing information is output.");
 		StringBuilder description = new StringBuilder("Path folding policy:");
-		for (PathFolding policy : PathFolding.values()) description.append(" ").append(policy);
+		for (FoldingPolicy policy : FoldingPolicy.values()) description.append(" ").append(policy);
 		options.addOption("P", "fold-policy", true,  description.toString());
 		options.addOption("H", "output-hops", true, "Base filename to output hop histograms for each sink policy. Appended with -<policy-num> for each.");
 
@@ -229,27 +229,27 @@ public class RoutingSim {
 			return;
 		}
 
-		final PathFolding pathFolding;
+		final FoldingPolicy foldingPolicy;
 		if (cmd.hasOption("fold-policy")) {
 			try {
-				pathFolding = PathFolding.valueOf(cmd.getOptionValue("fold-policy"));
+				foldingPolicy = FoldingPolicy.valueOf(cmd.getOptionValue("fold-policy"));
 			} catch (IllegalArgumentException e) {
 				System.out.println("The folding policy \"" + cmd.getOptionValue("fold-policy") + "\" is invalid.");
 				System.out.println("Possible values are:");
-				for (PathFolding policy : PathFolding.values()) {
+				for (FoldingPolicy policy : FoldingPolicy.values()) {
 					System.out.println(policy.toString());
 				}
 				e.printStackTrace();
 				System.exit(15);
 				/*
 				 * Data flow analysis does not appear to take into account that System.exit() ends the
-				 * program, so the return is here to prevent pathFolding from being possibly
+				 * program, so the return is here to prevent foldingPolicy from being possibly
 				 * uninitialized.
 				 */
 				return;
 			}
 		} else {
-			pathFolding = PathFolding.NONE;
+			foldingPolicy = FoldingPolicy.NONE;
 		}
 
 		//Check for problems with specified paths.
@@ -361,7 +361,7 @@ public class RoutingSim {
 
 		if (cmd.hasOption("route")) {
 			rand = new MersenneTwister(seed);
-			simulate(g, rand, nRequests, cmd.getOptionValue("output-route"), pathFolding, histogramOutput);
+			simulate(g, rand, nRequests, cmd.getOptionValue("output-route"), foldingPolicy, histogramOutput);
 		}
 
 		if (cmd.hasOption("output-degree")) {
@@ -514,7 +514,7 @@ public class RoutingSim {
 	}
 
 	private static void simulate(Graph g, Random rand, int nRequests, final String outputPath,
-	                             final PathFolding policy, final PrintStream[] histogramOutput) {
+	                             final FoldingPolicy policy, final PrintStream[] histogramOutput) {
 		/*File outputFile = new File(outputPath);
 		PrintStream stream = null;
 		try {

@@ -1,6 +1,6 @@
 package org.freenetproject.routing_simulator.graph.node;
 
-import org.freenetproject.routing_simulator.PathFolding;
+import org.freenetproject.routing_simulator.FoldingPolicy;
 import org.freenetproject.routing_simulator.graph.Location;
 import org.freenetproject.routing_simulator.util.lru.LRUQueue;
 
@@ -218,7 +218,7 @@ public class SimpleNode {
 		}
 	}
 
-	private static void success(final ArrayList<SimpleNode> nodeChain, PathFolding policy) {
+	private static void success(final ArrayList<SimpleNode> nodeChain, FoldingPolicy policy) {
 		// Can't fold if no nodes involved, (local node was closest right off) or if one node nowhere to fold to.
 		if (nodeChain.size() < 2) return;
 		switch (policy) {
@@ -236,13 +236,13 @@ public class SimpleNode {
 	 *
 	 * @param target Location to route to.
 	 * @param hopsToLive Maximum number of additional hops.
-	 * @param folding Path folding policy to use on success.
+	 * @param foldingPolicy Path folding policy to use on success.
 	 */
-	public void greedyRoute(final double target, int hopsToLive, final PathFolding folding) {
-		greedyRoute(target, hopsToLive, folding, new ArrayList<SimpleNode>());
+	public void greedyRoute(final double target, final int hopsToLive, final FoldingPolicy foldingPolicy) {
+		greedyRoute(target, hopsToLive, foldingPolicy, new ArrayList<SimpleNode>());
 	}
 
-	private void greedyRoute(final double target, int hopsToLive, final PathFolding folding, final ArrayList<SimpleNode> chain) {
+	private void greedyRoute(final double target, int hopsToLive, final FoldingPolicy foldingPolicy, final ArrayList<SimpleNode> chain) {
 		if (hopsToLive <= 0) throw new IllegalStateException("hopsToLive must be positive. It is " + hopsToLive);
 		// Find node closest to target. Start out assuming this node is the closest.
 		SimpleNode next = this;
@@ -259,7 +259,7 @@ public class SimpleNode {
 
 		// Local node is the closest. Dead end - success.
 		if (next == this) {
-			success(chain, folding);
+			success(chain, foldingPolicy);
 			return;
 		}
 
@@ -267,10 +267,10 @@ public class SimpleNode {
 		hopsToLive--;
 
 		if (hopsToLive == 0) {
-			success(chain, folding);
+			success(chain, foldingPolicy);
 		} else {
 			chain.add(this);
-			next.greedyRoute(target, hopsToLive, folding, chain);
+			next.greedyRoute(target, hopsToLive, foldingPolicy, chain);
 		}
 	}
 
