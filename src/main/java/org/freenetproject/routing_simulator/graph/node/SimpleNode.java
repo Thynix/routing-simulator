@@ -31,6 +31,17 @@ public class SimpleNode {
 		out.writeInt(desiredDegree);
 	}
 
+	@Override
+	public boolean equals(Object other) {
+		return other instanceof SimpleNode && this.hashCode() == other.hashCode();
+
+	}
+
+	@Override
+	public int hashCode() {
+		return index + desiredDegree + Float.floatToIntBits((float)location) + connections.size();
+	}
+
 	public SimpleNode(DataInputStream in, int index, Random rand) throws IOException {
 		location = in.readDouble();
 		desiredDegree = in.readInt();
