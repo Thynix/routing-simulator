@@ -1,11 +1,12 @@
 package org.freenetproject.routing_simulator.util;
 
+import org.apache.commons.math3.random.RandomGenerator;
+
 import java.io.BufferedReader;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Random;
 
 /**
  * Selects from a weighted distribution.
@@ -22,7 +23,7 @@ public class WeightedDistribution {
 
 	private final ArrayList<Event> events;
 	private final int totalOccurances;
-	private final Random random;
+	private final RandomGenerator random;
 
 	/**
 	 * Replicates given distribution of values.
@@ -30,7 +31,7 @@ public class WeightedDistribution {
 	 * @param input stream to read from. Format "[number] [number of occurrences]\n"
 	 * @param random Used for random values.
 	 */
-	public WeightedDistribution(DataInputStream input, Random random) {
+	public WeightedDistribution(DataInputStream input, RandomGenerator random) {
 		this.events = new ArrayList<Event>();
 		this.random = random;
 		int tentativeTotal = 0;

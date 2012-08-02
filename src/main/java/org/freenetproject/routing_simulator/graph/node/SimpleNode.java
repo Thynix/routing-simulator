@@ -1,5 +1,6 @@
 package org.freenetproject.routing_simulator.graph.node;
 
+import org.apache.commons.math3.random.RandomGenerator;
 import org.freenetproject.routing_simulator.FoldingPolicy;
 import org.freenetproject.routing_simulator.graph.Location;
 import org.freenetproject.routing_simulator.util.lru.LRUQueue;
@@ -9,7 +10,6 @@ import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.ListIterator;
-import java.util.Random;
 
 /**
  * A simple node model.  Has a location and a set of connections.
@@ -19,7 +19,7 @@ public class SimpleNode {
 	private final ArrayList<SimpleNode> connections;
 	private final int desiredDegree;
 
-	private final Random rand;
+	private final RandomGenerator rand;
 
 	/**Index of this node in the graph; purely for convenience, not used in any decision making.*/
 	public final int index;
@@ -42,7 +42,7 @@ public class SimpleNode {
 		return index + desiredDegree + Float.floatToIntBits((float)location) + connections.size();
 	}
 
-	public SimpleNode(DataInputStream in, int index, Random rand) throws IOException {
+	public SimpleNode(DataInputStream in, int index, RandomGenerator rand) throws IOException {
 		location = in.readDouble();
 		desiredDegree = in.readInt();
 
@@ -60,7 +60,7 @@ public class SimpleNode {
 	 * @param rand Used for random numbers in decision making.
 	 * @param desiredDegree Desired degree of the node.
 	 */
-	public SimpleNode(double location, Random rand, int desiredDegree, int index) {
+	public SimpleNode(double location, RandomGenerator rand, int desiredDegree, int index) {
 		if (location < 0.0 || location >= 1.0)
 			throw new IllegalArgumentException("Location must be in [0,1).");
 
@@ -397,7 +397,7 @@ public class SimpleNode {
 	 * @param rand Randomness source to use
 	 * @return list of nodes along the way. The list's first element is the this node, its last is the endpoint.
 	 */
-	public ArrayList<SimpleNode> randomWalkList(int hops, boolean uniform, Random rand) {
+	public ArrayList<SimpleNode> randomWalkList(int hops, boolean uniform, RandomGenerator rand) {
 		if (hops < 0) throw new IllegalArgumentException("Must have positive hops.");
 		ArrayList<SimpleNode> list = new ArrayList<SimpleNode>();
 		//System.out.println(hops + " HTL: At " + this.index);
@@ -447,7 +447,7 @@ public class SimpleNode {
 	 * @param rand Randomness source to use
 	 * @return The final node of the walk
 	 */
-	public SimpleNode randomWalk(int hops, boolean uniform, Random rand) {
+	public SimpleNode randomWalk(int hops, boolean uniform, RandomGenerator rand) {
 		return randomWalkList(hops, uniform, rand).get(hops);
 	}
 }

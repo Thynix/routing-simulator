@@ -6,6 +6,8 @@ import org.apache.commons.cli.GnuParser;
 import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.freenetproject.routing_simulator.graph.Graph;
 import org.freenetproject.routing_simulator.graph.degree.ConformingDegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
@@ -16,8 +18,6 @@ import org.freenetproject.routing_simulator.graph.linklength.KleinbergLinkSource
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
 import org.freenetproject.routing_simulator.graph.linklength.UniformLinkSource;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
-import org.freenetproject.routing_simulator.util.ArrayStats;
-import org.freenetproject.routing_simulator.util.MersenneTwister;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -30,7 +30,6 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Random;
 
 /**
  * Class to perform routing simulations on Graphs.
@@ -288,8 +287,6 @@ public class RoutingSim {
 		int nRequests = cmd.hasOption("route") ? Integer.valueOf(cmd.getOptionValue("route")) : 4000;
 		int maxHops = cmd.hasOption("probe") ? Integer.valueOf(cmd.getOptionValue("probe")) : 50;
 
-		Random rand;
-
 		//TODO: What is this used for?
 		//TODO: Hard-coded dimensions bad - clean this up.
 		double[][][] avgStats = new double[1][13][1];
@@ -305,7 +302,7 @@ public class RoutingSim {
 			System.out.println();
 		}
 
-		rand = new MersenneTwister(seed);
+		RandomGenerator rand = new MersenneTwister(seed);
 
 		//Time tracking: report time taken for each graph setting if verbose; upon completion otherwise.
 		long startTime = System.currentTimeMillis();
@@ -442,7 +439,7 @@ public class RoutingSim {
 		}
 	}
 
-	private static void probeDistribution(Graph g, Random rand, int maxHops, boolean quiet, boolean verbose, final String containingPath, boolean uniform) {
+	private static void probeDistribution(Graph g, RandomGenerator rand, int maxHops, boolean quiet, boolean verbose, final String containingPath, boolean uniform) {
 		File output = new File(containingPath);
 		assert output.isDirectory();
 		if (!output.exists()) {
@@ -513,7 +510,7 @@ public class RoutingSim {
 		}
 	}
 
-	private static void simulate(Graph g, Random rand, int nRequests, final String outputPath,
+	private static void simulate(Graph g, RandomGenerator rand, int nRequests, final String outputPath,
 	                             final FoldingPolicy policy, final PrintStream[] histogramOutput) {
 		/*File outputFile = new File(outputPath);
 		PrintStream stream = null;

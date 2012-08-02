@@ -1,9 +1,9 @@
 package org.freenetproject.routing_simulator.graph.linklength;
 
+import org.apache.commons.math3.random.RandomGenerator;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 
 import java.util.ArrayList;
-import java.util.Random;
 
 /**
  * Generates link lengths with uniform / flat probability. Terrible distribution.
@@ -11,9 +11,9 @@ import java.util.Random;
 public class UniformLinkSource extends LinkLengthSource {
 
 	/**
-	 * @see LinkLengthSource#LinkLengthSource(java.util.Random, java.util.ArrayList)
+	 * @see LinkLengthSource#LinkLengthSource(org.apache.commons.math3.random.RandomGenerator, java.util.ArrayList
 	 */
-	public UniformLinkSource(Random random, ArrayList<SimpleNode> nodes) {
+	public UniformLinkSource(RandomGenerator random, ArrayList<SimpleNode> nodes) {
 		super(random, nodes);
 	}
 

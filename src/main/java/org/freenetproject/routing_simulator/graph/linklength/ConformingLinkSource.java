@@ -1,5 +1,6 @@
 package org.freenetproject.routing_simulator.graph.linklength;
 
+import org.apache.commons.math3.random.RandomGenerator;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 
 import java.io.BufferedReader;
@@ -7,16 +8,15 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Random;
 
 public class ConformingLinkSource extends LinkLengthSource {
 
 	private final ArrayList<Double> lengths;
 
 	/**
-	 * @see LinkLengthSource#LinkLengthSource(java.util.Random, java.util.ArrayList)
+	 * @see LinkLengthSource#LinkLengthSource(org.apache.commons.math3.random.RandomGenerator, java.util.ArrayList
 	 */
-	public ConformingLinkSource(DataInputStream input, Random random, ArrayList<SimpleNode> nodes) {
+	public ConformingLinkSource(DataInputStream input, RandomGenerator random, ArrayList<SimpleNode> nodes) {
 		super(random, nodes);
 
 		lengths = new ArrayList<Double>();

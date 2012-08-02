@@ -1,5 +1,7 @@
 package org.freenetproject.routing_simulator.graph;
 
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.freenetproject.routing_simulator.graph.degree.FixedDegreeSource;
 import org.freenetproject.routing_simulator.graph.linklength.KleinbergLinkSource;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
@@ -12,7 +14,6 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Random;
 
 /**
  * Test graph saving and loading.
@@ -28,12 +29,12 @@ public class GraphTest {
 	/**
 	 * @return A consistent, fresh randomness source.
 	 */
-	private Random getRandom() {
-		return new Random(0);
+	private RandomGenerator getRandom() {
+		return new MersenneTwister(0);
 	}
 
 	private Graph generateKleinberg() {
-		final Random random = getRandom();
+		final RandomGenerator random = getRandom();
 		final ArrayList<SimpleNode> nodes = Graph.generateNodes(100, random, false, new FixedDegreeSource(5));
 		return Graph.connectGraph(nodes, random, new KleinbergLinkSource(random, nodes));
 	}

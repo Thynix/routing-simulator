@@ -1,11 +1,11 @@
 package org.freenetproject.routing_simulator.graph.linklength;
 
+import org.apache.commons.math3.random.RandomGenerator;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Random;
 
 /**
  * Generates links conforming to the 1/d Kleinberg distribution.
@@ -13,7 +13,7 @@ import java.util.Random;
 public class KleinbergLinkSource extends LinkLengthSource {
 	private final HashMap<SimpleNode, double[]> probabilityCDF;
 
-	public KleinbergLinkSource(Random random, ArrayList<SimpleNode> nodes) {
+	public KleinbergLinkSource(RandomGenerator random, ArrayList<SimpleNode> nodes) {
 		super(random, nodes);
 		probabilityCDF = new HashMap<SimpleNode, double[]>(nodes.size());
 	}

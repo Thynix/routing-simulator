@@ -1,10 +1,10 @@
 package org.freenetproject.routing_simulator.graph.linklength;
 
+import org.apache.commons.math3.random.RandomGenerator;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.Random;
 
 /**
  * Used to generate graphs conforming to a link length distribution. Not thread-safe.
@@ -26,7 +26,7 @@ public abstract class LinkLengthSource {
 		}
 	}
 
-	final Random random;
+	final RandomGenerator random;
 
 	/**
 	 * Stores a list of the distances to each other node for every node submitted with a peer query.
@@ -42,7 +42,7 @@ public abstract class LinkLengthSource {
 	 * @param random To make decisions.
 	 * @param nodes Nodes which make up the network being wired.
 	 */
-	LinkLengthSource(Random random, ArrayList<SimpleNode> nodes) {
+	LinkLengthSource(RandomGenerator random, ArrayList<SimpleNode> nodes) {
 		this.random = random;
 		this.nodes = nodes;
 		assert nodes.size() > 1;

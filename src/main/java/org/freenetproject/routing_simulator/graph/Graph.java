@@ -1,5 +1,7 @@
 package org.freenetproject.routing_simulator.graph;
 
+import org.apache.commons.math3.random.MersenneTwister;
+import org.apache.commons.math3.random.RandomGenerator;
 import org.apache.commons.math3.util.Pair;
 import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
 import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
@@ -7,7 +9,6 @@ import org.freenetproject.routing_simulator.graph.linklength.KleinbergLinkSource
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 import org.freenetproject.routing_simulator.util.ArrayStats;
-import org.freenetproject.routing_simulator.util.MersenneTwister;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
@@ -15,7 +16,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Random;
 
 /**
  * Class to represent and generate graphs of small world networks.
@@ -40,7 +40,7 @@ public class Graph {
 		this.nodes = nodes;
 	}
 
-	public static ArrayList<SimpleNode> generateNodes(final int nNodes, final Random rand, boolean fastGeneration, DegreeSource source) {
+	public static ArrayList<SimpleNode> generateNodes(final int nNodes, final RandomGenerator rand, boolean fastGeneration, DegreeSource source) {
 		double[] locations = new double[nNodes];
 		if (fastGeneration) {
 			for (int i = 0; i < nNodes; i++) locations[i] = (1.0 * i) / nNodes;
@@ -130,7 +130,7 @@ public class Graph {
 	 *
 	 * @return Graph with specified edges added.
 	 */
-	public static Graph connectGraph(Graph g, Random rand, LinkLengthSource linkLengthSource) {
+	public static Graph connectGraph(Graph g, RandomGenerator rand, LinkLengthSource linkLengthSource) {
 		SimpleNode destination;
 		for (SimpleNode src : g.nodes) {
 			if (src.atDegree()) continue;
@@ -147,7 +147,7 @@ public class Graph {
 		return g;
 	}
 
-	public static Graph connectGraph(ArrayList<SimpleNode> nodes, Random rand, LinkLengthSource linkLengthSource) {
+	public static Graph connectGraph(ArrayList<SimpleNode> nodes, RandomGenerator rand, LinkLengthSource linkLengthSource) {
 		return connectGraph(new Graph(nodes), rand, linkLengthSource);
 	}
 
@@ -157,9 +157,9 @@ public class Graph {
 	 *
 	 * @param nodes Nodes which make up the network.
 	 *
-	 * @see Graph#connectGraph(Graph, java.util.Random, org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource)
+	 * @see Graph#connectGraph(Graph, org.apache.commons.math3.random.RandomGenerator, org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource)
 	 */
-	public static Graph connectGraphLattice(ArrayList<SimpleNode> nodes, Random rand, LinkLengthSource linkLengthSource) {
+	public static Graph connectGraphLattice(ArrayList<SimpleNode> nodes, RandomGenerator rand, LinkLengthSource linkLengthSource) {
 		Graph graph = new Graph(nodes);
 		graph.addLatticeLinks(false);
 		return Graph.connectGraph(graph, rand, linkLengthSource);
@@ -218,7 +218,7 @@ public class Graph {
 	 * @param random Randomness source to give to nodes.
 	 * @return graph defined by the file.
 	 */
-	public static Graph read(DataInputStream input, Random random) {
+	public static Graph read(DataInputStream input, RandomGenerator random) {
 		try {
 			// Number of nodes.
 			final int networkSize = input.readInt();
@@ -465,7 +465,7 @@ public class Graph {
 		return ((double)(nClosed)) / ((double)(nTotal));
 	}
 
-	private int[] randomWalkDistTest(int nWalks, int hopsPerWalk, boolean uniform, Random rand) {
+	private int[] randomWalkDistTest(int nWalks, int hopsPerWalk, boolean uniform, RandomGenerator rand) {
 		int[] choiceFreq = new int[size()];
 		int dupCount = 0;
 		for (int i = 0; i < nWalks; i++) {
@@ -494,7 +494,7 @@ public class Graph {
 
 		for (int trial = 0; trial < nTrials; trial++) {
 			System.out.println("Creating test graph...");
-			Random rand = new MersenneTwister(trial);
+			RandomGenerator rand = new MersenneTwister(trial);
 			final ArrayList<SimpleNode> nodes = Graph.generateNodes(nNodes, rand, true, new PoissonDegreeSource(12));
 			Graph g = connectGraph(nodes, rand, new KleinbergLinkSource(rand, nodes));
 			g.printGraphStats(true);
