@@ -18,6 +18,7 @@ import org.freenetproject.routing_simulator.graph.linklength.KleinbergLinkSource
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
 import org.freenetproject.routing_simulator.graph.linklength.UniformLinkSource;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
+import org.freenetproject.routing_simulator.util.ArrayStats;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
