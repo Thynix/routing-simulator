@@ -33,7 +33,7 @@ public class GraphTest {
 	/**
 	 * @return A consistent, fresh randomness source.
 	 */
-	private RandomGenerator getRandom() {
+	private static RandomGenerator getRandom() {
 		return new MersenneTwister(0);
 	}
 
@@ -41,7 +41,7 @@ public class GraphTest {
 	 * @return a 100-node graph with nodes of desired degree 5 connected with an ideal Kleinberg link length
 	 * distribution.
 	 */
-	private Graph generateKleinberg() {
+	public static Graph generateKleinberg() {
 		final RandomGenerator random = getRandom();
 		final ArrayList<SimpleNode> nodes = Graph.generateNodes(100, random, false, new FixedDegreeSource(5));
 		return Graph.connectGraph(nodes, random, new KleinbergLinkSource(random, nodes));
@@ -52,7 +52,7 @@ public class GraphTest {
 	 *                 If false, the lattice links are undirected.
 	 * @return graph with only lattice links. The nodes have a desired degree of zero.
 	 */
-	private Graph generateLattice(boolean directed) {
+	private static Graph generateLattice(boolean directed) {
 		// 0 desired degree means it should just have lattice.
 		// TODO: Having to do this seems strange. Would it be better if nodes didn't have inherent desired degrees? Maybe a generateNodes which didn't need a degree source?
 		final RandomGenerator random = getRandom();

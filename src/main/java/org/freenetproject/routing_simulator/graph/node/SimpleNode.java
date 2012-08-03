@@ -32,14 +32,24 @@ public class SimpleNode {
 	}
 
 	@Override
-	public boolean equals(Object other) {
-		return other instanceof SimpleNode && this.hashCode() == other.hashCode();
+	public boolean equals(Object o) {
+		if (!(o instanceof SimpleNode)) return false;
 
+		final SimpleNode other = (SimpleNode)o;
+
+		if (this.degree() != other.degree()) return false;
+
+		for (int i = 0; i < this.degree(); i++) {
+			if (this.getConnections().get(i).index != other.getConnections().get(i).index) return false;
+		}
+
+		return this.index == other.index && this.location == other.location &&
+		       this.desiredDegree == other.desiredDegree;
 	}
 
 	@Override
 	public int hashCode() {
-		return index + desiredDegree + Float.floatToIntBits((float)location) + connections.size();
+		return index;
 	}
 
 	public SimpleNode(DataInputStream in, int index, RandomGenerator rand) throws IOException {
@@ -377,6 +387,7 @@ public class SimpleNode {
 		assert this.isConnected(other) && other.isConnected(this);
 		this.connections.remove(other);
 		other.connections.remove(this);
+		assert !this.isConnected(other) && !other.isConnected(this);
 	}
 
 	/**
