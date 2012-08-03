@@ -104,21 +104,29 @@ public class Graph {
 	}
 
 	/**
-	 * Adds lattice links.
+	 * Adds lattice links. Should be the first thing to add edges to a network.
 	 *
 	 * Connects node X to X - 1 mod N for all X, where X is node index and N is the network size.
 	 *
 	 * @param directed If true, the lattice links will be directed. If false, undirected.
 	 */
 	private void addLatticeLinks(final boolean directed) {
+		assert nEdges() == 0;
+
 		for (int i = 0; i < size(); i++) {
 			final SimpleNode from = getNode(i);
-			final SimpleNode to = getNode(Math.abs((i - 1) % size()));
-			if (from.isConnected(to) || to.isConnected(from)) continue;
+			// Should wrap to N - 1 at -1.
+			final SimpleNode to = getNode(((i - 1) % size() + size()) % size());
+			if (from.isConnected(to) || to.isConnected(from)) {
+				throw new IllegalStateException("Connection already existed.");
+			}
 
 			if (directed) from.connectOutgoing(to);
 			else from.connect(to);
 		}
+
+		// There is an edge between every node in a circle.
+		assert nEdges() == size();
 	}
 
 	/**
