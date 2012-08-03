@@ -17,6 +17,8 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 
+import static org.freenetproject.routing_simulator.graph.Graph.divisorMod;
+
 /**
  * Test graph generation, saving, and loading.
  */
@@ -59,15 +61,6 @@ public class GraphTest {
 
 		if (directed) return Graph.connectSandberg(nodes, 0, linkLengthSource);
 		else return Graph.connectGraphLattice(nodes, random, linkLengthSource);
-	}
-
-	/**
-	 * @param a Dividend.
-	 * @param n Divisor.
-	 * @return a Mod n, with the result having the sign of the divisor. This is so that -1 Mod N produces N - 1.
-	 */
-	private static int divisorMod(final int a, final int n) {
-		return (a % n + n) % n;
 	}
 
 	/**

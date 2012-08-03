@@ -120,7 +120,8 @@ public class SimpleNode {
 		// Do not path fold to self.
 		if (peer == this) return false;
 		// Do not path fold to a node which is already connected. TODO: Connections undirected - both should be true if either is.
-		if (this.connections.contains(peer) || peer.connections.contains(this)) return false;
+		if (this.isConnected(peer) || peer.isConnected(this)) return false;
+		// Have only a chance of accepting if already at capacity, or peer is.
 		if ((atDegree() || !peer.atDegree()) && rand.nextDouble() < (1.0 - acceptanceRate)) return false;
 
 		// Disconnect from least, but restore invariant that both are in each other's LRU queues.
@@ -178,46 +179,85 @@ public class SimpleNode {
 	 * Rewires this node's shortcut to the endpoint. Expects every node to have only two outgoing connections:
 	 * its lattice connection and its shortcut. Assumes the lattice connection is the first; shortcut the second.
 	 * @param endpoint endpoint to fold to.
+	 * @param foldingPolicy If SANDBERG, first two are lattice and not touched, and shortcuts are undirected.
+	 *                      If SANDBERG_DIRECTED, first one is lattice and not touched, and shortcuts are directed.
+	 *                      Other values are not accepted.
 	 * @return whether the fold was executed.
 	 */
-	private boolean offerShortcutFold(final SimpleNode endpoint, double acceptanceRate) {
+	private boolean offerShortcutFold(final SimpleNode endpoint, final double acceptanceRate, final FoldingPolicy foldingPolicy) {
+		if (foldingPolicy != FoldingPolicy.SANDBERG && foldingPolicy != FoldingPolicy.SANDBERG_DIRECTED) {
+			throw new IllegalArgumentException("Attempted to use shortcut folding with policy " + foldingPolicy);
+		}
 		//TODO: connections size is number of shortcuts + 1 (1 for the lattice link)
 		//assert connections.size() == 2;
 		// Do not path fold to self.
 		if (endpoint == this) return false;
 		// Do not path fold to a node which is already connected.
-		if (this.connections.contains(endpoint)) return false;
+		if (this.isConnected(endpoint)) return false;
+		if (foldingPolicy == FoldingPolicy.SANDBERG && endpoint.isConnected(this)) {
+			throw new IllegalStateException("Directed connection from endpoint");
+		}
 		if (rand.nextDouble() < (1.0 - acceptanceRate)) return false;
 
-		int disconnectedShortcut = rand.nextInt(connections.size() - 1) + 1;
-		disconnectOutgoing(connections.get(disconnectedShortcut));
+		final int latticeLinks;
+		if (foldingPolicy == FoldingPolicy.SANDBERG) latticeLinks = 2;
+		else /*if (foldingPolicy == FoldingPolicy.SANDBERG_DIRECTED)*/ latticeLinks = 1;
+
+		// A node should always have its lattice links.
+		assert degree() >= latticeLinks;
+		assert endpoint.degree() >= latticeLinks;
+
+		// No shortcuts remain - accept the incoming.
+		if (degree() == latticeLinks) {
+			// The time at which a node should be able to lose shortcuts
+			assert foldingPolicy == FoldingPolicy.SANDBERG;
+			connect(endpoint);
+			return true;
+		}
+
+		int disconnectedShortcut = rand.nextInt(degree() - latticeLinks) + latticeLinks;
+		final SimpleNode disconnected = connections.get(disconnectedShortcut);
+
+		// Neither shortcut nor endpoint should be a lattice link. TODO: Can't check without knowing graph size for wrapping point.
+		// WARNING: Incomplete lattice check.
+		assert !(index + 1 == disconnected.index || disconnected.index + 1 == index);
+		assert !(index + 1 == endpoint.index || endpoint.index + 1 == index);
+
+		// Can't leave node that's being disconnected without its lattice links.
+		assert disconnected.degree() > latticeLinks;
+
+		if (foldingPolicy == FoldingPolicy.SANDBERG) {
+			assert !this.isConnected(endpoint) && !endpoint.isConnected(this);
+			assert this.isConnected(disconnected) && disconnected.isConnected(this);
+			//assert this.isConnected(disconnected) && disconnected.isConnected(this);
+			if (!(this.isConnected(disconnected) && disconnected.isConnected(this))) {
+				System.err.println("Connection between " + this.index + " and " + disconnected.index + " is not undirected!");
+			}
+			disconnect(disconnected);
+			assert !this.isConnected(disconnected) && !disconnected.isConnected(this);
+			connect(endpoint);
+			assert this.isConnected(endpoint) && endpoint.isConnected(this);
+		} else /*if (foldingPolicy == FoldingPolicy.SANDBERG_DIRECTED)*/ {
+		disconnectOutgoing(disconnected);
 		connectOutgoing(endpoint);
+		}
+
+		// All affected nodes should retain their lattice links.
+		assert degree() >= latticeLinks;
+		assert degree() >= latticeLinks;
+		assert degree() >= latticeLinks;
 
 		return true;
 	}
 
 	/**
-	 * Folds with SANDBURG policy.
 	 * Offers a connection to the endpoint to every other node.
 	 * @param nodeChain  Nodes which make up the path the request has followed. First element is the origin of the
 	 *                   request; last is the endpoint.
+	 * @param foldingPolicy Folds with either SANDBERG (Undirected and first two connections lattice) or
+	 *                      SANDBERG_DIRECTED policy. (Directed and first connection lattice.)
 	 */
-	private static void successSandberg(final ArrayList<SimpleNode> nodeChain) {
-		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
-
-		final SimpleNode endpoint;
-		if (iterator.hasPrevious()) endpoint = iterator.previous();
-		else return;
-
-		//Accept path fold with 1/path length probability.
-		final double acceptProbability = 1 / nodeChain.size();
-
-		while (iterator.hasPrevious()) {
-			iterator.previous().offerPathFold(endpoint, acceptProbability);
-		}
-	}
-
-	private static void successSandbergDirected(final ArrayList<SimpleNode> nodeChain) {
+	private static void successSandberg(final ArrayList<SimpleNode> nodeChain, FoldingPolicy foldingPolicy) {
 		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
 
 		final SimpleNode endpoint;
@@ -225,7 +265,7 @@ public class SimpleNode {
 		else return;
 
 		while (iterator.hasPrevious()) {
-			iterator.previous().offerShortcutFold(endpoint, 0.07);
+			iterator.previous().offerShortcutFold(endpoint, 0.07, foldingPolicy);
 		}
 	}
 
@@ -235,8 +275,8 @@ public class SimpleNode {
 		switch (policy) {
 		case NONE: return;
 		case FREENET: successFreenet(nodeChain); break;
-		case SANDBERG: successSandberg(nodeChain); break;
-		case SANDBERG_DIRECTED: successSandbergDirected(nodeChain); break;
+		case SANDBERG: successSandberg(nodeChain, FoldingPolicy.SANDBERG); break;
+		case SANDBERG_DIRECTED: successSandberg(nodeChain, FoldingPolicy.SANDBERG_DIRECTED); break;
 		}
 	}
 
@@ -301,8 +341,13 @@ public class SimpleNode {
 	 * @param other Node to connect with.
 	 */
 	public void connect(SimpleNode other) {
-		this.connectOutgoing(other);
-		other.connectOutgoing(this);
+		//DEBUG: No outgoing connection.
+		/*this.connectOutgoing(other);
+		other.connectOutgoing(this);*/
+		assert other != this;
+		assert !this.isConnected(other) && !other.isConnected(this);
+		this.connections.add(other);
+		other.connections.add(this);
 	}
 
 	/**
@@ -325,8 +370,13 @@ public class SimpleNode {
 	 * @param other node to disconnect from.
 	 */
 	public void disconnect(SimpleNode other) {
-		this.disconnectOutgoing(other);
-		other.disconnectOutgoing(this);
+		// DEBUG: Should be no outgoing disconnections.
+		/*this.disconnectOutgoing(other);
+		other.disconnectOutgoing(this);*/
+		assert other != this;
+		assert this.isConnected(other) && other.isConnected(this);
+		this.connections.remove(other);
+		other.connections.remove(this);
 	}
 
 	/**
@@ -441,6 +491,7 @@ public class SimpleNode {
 
 	/**
 	 * Get the final node of a random walk starting here.
+	 *
 	 *
 	 * @param hops Number of hops to walk
 	 * @param uniform Whether to perform a uniform (normal) walk, or attempt to correct for high-degree bias

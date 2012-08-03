@@ -104,6 +104,15 @@ public class Graph {
 	}
 
 	/**
+	 * @param a Dividend.
+	 * @param n Divisor.
+	 * @return a Mod n, with the result having the sign of the divisor. This is so that -1 Mod N produces N - 1.
+	 */
+	public static int divisorMod(final int a, final int n) {
+		return (a % n + n) % n;
+	}
+
+	/**
 	 * Adds lattice links. Should be the first thing to add edges to a network.
 	 *
 	 * Connects node X to X - 1 mod N for all X, where X is node index and N is the network size.
@@ -180,7 +189,7 @@ public class Graph {
 	 *      <li>SimpleNodes.</li>
 	 *      <li>Connections: index from, index to</li>
 	 * </ul>
-	 * @param output stream to write graph to.
+	 * @param output stream to write graph to. Flushes and closes the stream when writing is complete.
 	 */
 	public void write(DataOutputStream output) {
 		try {
@@ -222,6 +231,8 @@ public class Graph {
 
 	/**
 	 * Constructs the graph from a file.
+	 *
+	 *
 	 * @param input stream to read the graph from.
 	 * @param random Randomness source to give to nodes.
 	 * @return graph defined by the file.
@@ -246,6 +257,16 @@ public class Graph {
 				//System.out.println(from + " " + to);
 				graph.nodes.get(from).connectOutgoing(graph.nodes.get(to));
 			}
+
+			for (final SimpleNode node : graph.nodes) {
+				for (final SimpleNode peer : node.getConnections()) {
+					if (!peer.isConnected(node)) {
+						System.out.println("Found directed connection from " + node.index + " to " + peer.index);
+						return graph;
+					}
+				}
+			}
+			System.out.println("All connections undirected.");
 
 			return graph;
 		} catch (IOException e) {
@@ -365,6 +386,7 @@ public class Graph {
 			}
 		}
 
+		//TODO: how to return more information?
 		System.out.println("Out of the edges " + directed + " are undirected.");
 		return connections.size();
 	}
