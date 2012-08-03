@@ -527,6 +527,18 @@ public class RoutingSim {
 
 		for (int i = 0; i < nRequests; i++) {
 			final SimpleNode origin = g.getNode(rand.nextInt(g.size()));
+
+			if (i == 1780) {
+				for (int j = 0; j < g.size(); j++) {
+					final SimpleNode node = g.getNode(j);
+					for (final SimpleNode peer : node.getConnections()) {
+						if (!peer.isConnected(node)) {
+							System.out.println("Found directed connection from " + node.index + " to " + peer.index);
+						}
+					}
+				}
+			}
+
 			origin.greedyRoute(rand.nextDouble(), 50, policy);
 		}
 		//TODO: This is only used in 2D capacity in one line: can make 1D?

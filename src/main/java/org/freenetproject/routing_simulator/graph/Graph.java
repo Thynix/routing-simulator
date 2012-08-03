@@ -258,16 +258,6 @@ public class Graph {
 				graph.nodes.get(from).connectOutgoing(graph.nodes.get(to));
 			}
 
-			for (final SimpleNode node : graph.nodes) {
-				for (final SimpleNode peer : node.getConnections()) {
-					if (!peer.isConnected(node)) {
-						System.out.println("Found directed connection from " + node.index + " to " + peer.index);
-						return graph;
-					}
-				}
-			}
-			System.out.println("All connections undirected.");
-
 			return graph;
 		} catch (IOException e) {
 			System.err.println("Could not read from input stream:");
