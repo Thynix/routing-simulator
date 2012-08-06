@@ -130,6 +130,29 @@ public class Graph {
 	}
 
 	/**
+	 * Connects a graph such that all nodes have a single (non-lattice, if possible) undirected connection to a
+	 * single super node. Ignores nodes' desired degree.
+	 *
+	 * @param nodes Nodes which make up the network.
+	 * @param lattice If true, adds lattice edges. If false, does not.
+	 *
+	 * @return Graph with the specified edges added.
+	 */
+	public static Graph connectSuperNode(ArrayList<SimpleNode> nodes, boolean lattice) {
+		Graph graph = new Graph(nodes);
+		assert nodes.size() > 1;
+		if (lattice) graph.addLatticeLinks(false);
+
+		final SimpleNode superNode = graph.getNode(0);
+		for (int i = 1; i < graph.size(); i++) {
+			SimpleNode peer = graph.getNode(i);
+			if (!superNode.isConnected(peer)) superNode.connect(peer);
+		}
+
+		return graph;
+	}
+
+	/**
 	 * Adds links to a graph which conform to the link length distribution and peer count distribution given.
 	 *
 	 * @param g Graph to add edges to.
