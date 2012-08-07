@@ -1,29 +1,14 @@
 package org.freenetproject.routing_simulator;
 
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.CommandLineParser;
-import org.apache.commons.cli.GnuParser;
-import org.apache.commons.cli.HelpFormatter;
-import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.math3.random.MersenneTwister;
 import org.apache.commons.math3.random.RandomGenerator;
 import org.freenetproject.routing_simulator.graph.Graph;
-import org.freenetproject.routing_simulator.graph.degree.ConformingDegreeSource;
-import org.freenetproject.routing_simulator.graph.degree.DegreeSource;
-import org.freenetproject.routing_simulator.graph.degree.FixedDegreeSource;
-import org.freenetproject.routing_simulator.graph.degree.PoissonDegreeSource;
-import org.freenetproject.routing_simulator.graph.linklength.ConformingLinkSource;
-import org.freenetproject.routing_simulator.graph.linklength.KleinbergLinkSource;
 import org.freenetproject.routing_simulator.graph.linklength.LinkLengthSource;
-import org.freenetproject.routing_simulator.graph.linklength.UniformLinkSource;
 import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 import org.freenetproject.routing_simulator.util.ArrayStats;
 
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -40,75 +25,6 @@ public class RoutingSim {
 	private static final DecimalFormat outputFormat = new DecimalFormat("0.000000");
 
 	/**
-	 * Checks that a path is a directory which can be written to, and attempts to create it if it does not exist.
-	 * Outputs descriptive messages if given anything other than an existing writable directory.
-	 * @param path path to check
-	 * @return True if the directory (now) exists and is writable; false otherwise.
-	 */
-	private static boolean writableDirectory(String path) {
-		File file = new File(path);
-		if (!file.exists()) {
-			if (!file.mkdirs()) {
-				System.out.println("Unable to create degree output directory \"" + file.getAbsolutePath() + "\".");
-				return false;
-			} else {
-				System.out.println("Degree output directory \"" + file.getAbsolutePath() + "\" did not exist, so it was created.");
-			}
-		} else if (!file.isDirectory()) {
-			System.out.println("Degree output path \"" + file.getAbsolutePath() + "\" is not a directory as it should be.");
-			return false;
-		} else if (!file.canWrite()) {
-			System.out.println("No write access to degree output directory \"" + file.getAbsolutePath() + "\".");
-			return false;
-		}
-		return true;
-	}
-
-	/**
-	 * Attempts to open the given path for writing.
-	 * @param path File to open.
-	 * @return An output stream for the file.
-	 */
-	private static DataOutputStream writableFile(String path) throws FileNotFoundException {
-		try {
-			return new DataOutputStream(new FileOutputStream(new File(path)));
-		} catch (FileNotFoundException e) {
-			System.out.println("Unable to open \"" + path + "\" for output:");
-			e.printStackTrace();
-			throw e;
-		}
-	}
-
-	private static DataInputStream readableFile(String path) throws FileNotFoundException {
-		File file = new File(path);
-		try {
-			return new DataInputStream(new FileInputStream(file));
-		} catch (FileNotFoundException e) {
-			System.out.println("Cannot read \"" + file.getAbsolutePath() + "\" as a file.");
-			throw e;
-		}
-	}
-
-	/**
-	 * Wrapper for readableFile.
-	 * @return null if the option is not specified, or a stream.
-	 * @throws FileNotFoundException if the option was specified but the file was not found.
-	 */
-	private static DataInputStream readableFile(final String option, final CommandLine cmd) throws FileNotFoundException {
-		if (!cmd.hasOption(option)) return null;
-		return readableFile(cmd.getOptionValue(option));
-	}
-
-	/**
-	 * Wrapper for writableFile.
-	 * @return
-	 */
-	private static DataOutputStream writableFile(final String option, final CommandLine cmd) throws FileNotFoundException {
-		if (!cmd.hasOption(option)) return null;
-		return writableFile(cmd.getOptionValue(option));
-	}
-
-	/**
 	 * Main simulator program.  Generate a set of graphs of different
 	 * parameters, run a set of requests on them, and print assorted
 	 * stats.
@@ -116,169 +32,8 @@ public class RoutingSim {
 	 * @param args Command-line arguments; not used.
 	 */
 	public static void main(String[] args) throws ParseException {
-		//TODO: All this options stuff is an ugly, verbose mess. Is there some way to clean it up or at least move it somewhere else? Maybe main only does options parsing? (Then calls other stuff.)
-		Options options = new Options();
-		//TODO: Default values for arguments.
-		//TODO: Line lengths.
-		//Overall
-		options.addOption("D", "output-degree", true, "Output file for degree distribution.");
-		options.addOption("L", "output-link", true, "Output file for link length distribution.");
-		options.addOption("I", "include-lattice", false, "Include links from index X to X - 1 mod N when outputting link lengths. If the graph does not actually have lattice connections this is recommended.");
-		options.addOption("q", "quiet", false, "No simulation output to stdout. Messages about arguments are still output.");
-		options.addOption("v", "verbose", false, "Progress updates.");
-		options.addOption("h", "help", false, "Display this message.");
-		options.addOption("v", "version", false, "Display software version.");
-		options.addOption("S", "seed", true, "Seed used by psuedorandom number generator.");
-
-		//Graphs: General generation options
-		//TODO: Scale degree distribution (Also results?) to arbitrary network size - attempt to avoid distortion.
-		options.addOption("s", "size", true, "Number of nodes in the network. Currently ignored when using --degree unless --force-size is specified.");
-		//TODO: Does it make sense to use fastGeneration without evenSpacing? Assuming it doesn't.
-		options.addOption("f", "fast-generation", false, "If present, the simulator will assign locations with even spacing and, when using --ideal-link, take shortcuts to speed up graph generation.");
-		options.addOption("G", "load-graph", true, "Path to load a saved graph from.");
-		options.addOption("g", "save-graph", true, "Path to save a graph after simulation is run on it.");
-		options.addOption("s", "sandberg-graph", true, "Generate a directed graph with an edge from x to x -1 mod N for all x = 0 ... N - 1 as described in early section 2.2.1 in \"Searching in a Small World.\" Takes the number of shortcuts to make; the paper specifies 1 shortcut.");
-		options.addOption("l", "lattice", false, "Generate a graph with undirected lattice links, the given degree distribution, and the given link length distribution");
-		options.addOption("s", "supernode-graph", false, "Generate a graph with all nodes connected to a single supernode.");
-
-		//Graphs: link length distribution
-		options.addOption("l", "ideal-link", false, "Kleinberg's ideal distribution: proportional to 1/d.");
-		options.addOption("f", "flat-link", false, "Intentionally terrible distribution: uniformly random.");
-		options.addOption("c", "conforming-link", true, "Distribution conforming to a file. Takes a path to a degree distribution file of the format \"[degree] [number of occurrences]\\n\"\"");
-
-		//Graphs: degree distribution
-		options.addOption("F", "fixed-degree", true, "All nodes are as close to the specified degree as practical.");
-		options.addOption("C", "conforming-degree", true, "Distribution conforming to a file. Takes a path to a degree distribution file of the format \"[degree] [number of occurrences]\\n\"");
-		options.addOption("i", "poisson-degree", true, "Distribution conforming to a Poisson distribution with the given mean.");
-
-		//Simulations: Routing policies
-		options.addOption("R", "route", true, "Simulate routing the given number of requests. Requires that --output-route, --fold-policy, and --output-hops be specified.");
-		options.addOption("o", "output-route", true, "File to which routing information is output.");
-		StringBuilder description = new StringBuilder("Path folding policy:");
-		for (FoldingPolicy policy : FoldingPolicy.values()) description.append(" ").append(policy);
-		options.addOption("P", "fold-policy", true,  description.toString());
-		options.addOption("H", "output-hops", true, "Base filename to output hop histograms for each sink policy. Appended with -<policy-num> for each.");
-
-		//Simulations: Probe distribution
-		options.addOption("p", "probe", true, "Simulate running probes from random locations for the specified number of maximum hops. Requires that --output-probe be specified.");
-		options.addOption("m", "metropolis-hastings", false, "If present, probes will be routed with Metropolis-Hastings correction. If not, peers will be selected entirely at random.");
-		options.addOption("O", "output-probe", true, "Directory to which probe distribution is output as \"[node ID] [times seen]\\n\" for a reference of random selection from the whole and at each hop up to the specified maximum hops.");
-
-		CommandLineParser parser = new GnuParser();
-		CommandLine cmd = parser.parse(options, args);
-
-		if (cmd.hasOption("help")) {
-			HelpFormatter formatter = new HelpFormatter();
-			formatter.printHelp( "java -jar simulator.jar", options );
-			return;
-		}
-
-		if (cmd.hasOption("version")) {
-			System.out.println("Freenet Routing Simulator v 0.0.1-dev");
-			return;
-		}
-
-		//Check that required arguments are specified and that combinations make sense.
-		if (cmd.hasOption("quiet") && cmd.hasOption("verbose")) {
-			System.out.println("Quiet with verbose does not make sense.");
-			return;
-		}
-		if (cmd.hasOption("quiet") && !((cmd.hasOption("probe") && cmd.hasOption("output-probe")) || cmd.hasOption("output-degree") || cmd.hasOption("output-link") || cmd.hasOption("save-graph") || cmd.hasOption("route"))) {
-			System.out.println("Simulation will produce no output: --quiet is specified, but not any option which outputs to a file.");
-		}
-
-		int degreeOptions = 0;
-		for (String option : new String[] { "fixed-degree", "conforming-degree" }) {
-			if (cmd.hasOption(option)) degreeOptions++;
-		}
-
-		int linkOptions = 0;
-		for (String option : new String[] { "ideal-link", "flat-link", "conforming-link" }) {
-			if (cmd.hasOption(option)) linkOptions++;
-		}
-
-		if (degreeOptions > 1 || linkOptions > 1) {
-			System.out.println("Graph cannot be generated with multiple methods at once.");
-			return;
-		}
-
-		/*
-		 * - Sandberg-graph requires link.
-		 * - Load-graph does not require link or degree.
-		 * - Without these two, degree and link must be specified; optionally lattice too.
-		 */
-		if (!(cmd.hasOption("load-graph") || cmd.hasOption("supernode-graph") || (degreeOptions == 1 && linkOptions == 0 && !cmd.hasOption("sandberg-graph")) || (degreeOptions == 1 && linkOptions == 1))) {
-			System.out.println("No graph generation method specified.");
-			System.out.println("Valid graph types are:");
-			System.out.println(" * --load-graph");
-			System.out.println(" * --sandberg-graph with --*-link");
-			System.out.println(" * --*-degree, --*-link; optionally with --lattice");
-			System.out.println(" * --supernode-graph; optionally with --lattice");
-			return;
-		}
-
-		if (cmd.hasOption("route") && !cmd.hasOption("fold-policy")) {
-			System.out.println("--route was specified, but not --fold-policy.");
-			return;
-		}
-		if (cmd.hasOption("probe") && !cmd.hasOption("output-probe")) {
-			System.out.println("--probe was specified, but not --output-probe.");
-			return;
-		}
-
-		if (!cmd.hasOption("size") && !cmd.hasOption("load-graph")) {
-			System.out.println("Network size not specified. (--size)");
-			return;
-		}
-
-		final FoldingPolicy foldingPolicy;
-		if (cmd.hasOption("fold-policy")) {
-			try {
-				foldingPolicy = FoldingPolicy.valueOf(cmd.getOptionValue("fold-policy"));
-			} catch (IllegalArgumentException e) {
-				System.out.println("The folding policy \"" + cmd.getOptionValue("fold-policy") + "\" is invalid.");
-				System.out.println("Possible values are:");
-				for (FoldingPolicy policy : FoldingPolicy.values()) {
-					System.out.println(policy.toString());
-				}
-				e.printStackTrace();
-				System.exit(15);
-				/*
-				 * Data flow analysis does not appear to take into account that System.exit() ends the
-				 * program, so the return is here to prevent foldingPolicy from being possibly
-				 * uninitialized.
-				 */
-				return;
-			}
-		} else {
-			foldingPolicy = FoldingPolicy.NONE;
-		}
-
-		//Check for problems with specified paths.
-		//Check if input files can be read.
-		final DataInputStream degreeInput, linkInput, graphInput;
-		try {
-			degreeInput = readableFile("conforming-degree", cmd);
-			linkInput = readableFile("conforming-link", cmd);
-			graphInput = readableFile("load-graph", cmd);
-		} catch (FileNotFoundException e) {
-			System.exit(1);
-			return;
-		}
-
-		//Check if output paths are directories that can be written to, and create them if they do not exist.
-		if (cmd.hasOption("output-probe") && !writableDirectory(cmd.getOptionValue("output-probe"))) System.exit(12);
-
-		//Check that output files exist and are writable or can be created.
-		final DataOutputStream degreeOutput, linkOutput, graphOutput;
-		try {
-			degreeOutput = writableFile("output-degree", cmd);
-			linkOutput = writableFile("output-link", cmd);
-			graphOutput = writableFile("save-graph", cmd);
-		} catch (FileNotFoundException e) {
-			System.exit(2);
-			return;
-		}
+		Arguments arguments = Arguments.parse(args);
+		if (arguments == null) System.exit(1);
 
 		//TODO: What is a sink policy? Looks like 2 is used as a hard-coded second dimension in Request, so this isn't currently a good configuration target.
 		int[] sinkPolsUsed = {0, 1};
@@ -287,25 +42,18 @@ public class RoutingSim {
 			//histogramOutput[i] = new PrintStream(writableFile(cmd.getOptionValue("output-hops")+ "-" + sinkPolsUsed[i]));
 		}
 
-		int nRequests = cmd.hasOption("route") ? Integer.valueOf(cmd.getOptionValue("route")) : 4000;
-		int maxHops = cmd.hasOption("probe") ? Integer.valueOf(cmd.getOptionValue("probe")) : 50;
-
 		//TODO: What is this used for?
 		//TODO: Hard-coded dimensions bad - clean this up.
 		double[][][] avgStats = new double[1][13][1];
 
-		final boolean quiet = cmd.hasOption("quiet");
-		final boolean verbose = cmd.hasOption("verbose");
-		final int seed = cmd.hasOption("seed") ? Integer.valueOf(cmd.getOptionValue("seed")) : 0;
-
-		if (!verbose) {
+		if (!arguments.verbose) {
 			System.out.println();
 			System.out.print("p\tq\tpLow\tpInst\tevenSpacing\tfastGeneration\t");
 			Graph.printGraphStatsHeader();
 			System.out.println();
 		}
 
-		RandomGenerator rand = new MersenneTwister(seed);
+		RandomGenerator rand = new MersenneTwister(arguments.seed);
 
 		//Time tracking: report time taken for each graph setting if verbose; upon completion otherwise.
 		long startTime = System.currentTimeMillis();
@@ -313,38 +61,25 @@ public class RoutingSim {
 
 		// Load the graph; otherwise generate.
 		Graph g;
-		if (cmd.hasOption("load-graph")) {
-			g = Graph.read(graphInput, rand);
+		if (arguments.graphGenerator == GraphGenerator.LOAD) {
+			g = Graph.read(arguments.graphInput, rand);
 		} else {
-			final int networkSize = Integer.valueOf(cmd.getOptionValue("size"));
+			final ArrayList<SimpleNode> nodes = Graph.generateNodes(arguments.networkSize, rand, arguments.fastGeneration, arguments.getDegreeSource(rand));
+			final LinkLengthSource linkLengthSource = arguments.getLinkLengthSource(rand, nodes);
 
-			final DegreeSource degreeSource;
-			if (cmd.hasOption("conforming-degree")) degreeSource = new ConformingDegreeSource(degreeInput, rand);
-			else if (cmd.hasOption("poisson-degree")) degreeSource = new PoissonDegreeSource(Integer.valueOf(cmd.getOptionValue("poisson-degree")));
-			else if (cmd.hasOption("fixed-degree")) degreeSource = new FixedDegreeSource(Integer.valueOf(cmd.getOptionValue("fixed-degree")));
-			else /* if (cmd.hasOption("sandberg-graph") */ degreeSource = new FixedDegreeSource(0);
-
-			final ArrayList<SimpleNode> nodes = Graph.generateNodes(networkSize, rand, cmd.hasOption("fast-generation"), degreeSource);
-
-			final LinkLengthSource linkLengthSource;
-			if (cmd.hasOption("conforming-link")) linkLengthSource = new ConformingLinkSource(linkInput, rand, nodes);
-			else if (cmd.hasOption("ideal-link")) linkLengthSource = new KleinbergLinkSource(rand, nodes);
-			else if (cmd.hasOption("flat-link")) linkLengthSource = new UniformLinkSource(rand, nodes);
-			else /* if cmd.hasOption("supernode-graph") */ linkLengthSource = null;
-
-				if (cmd.hasOption("sandberg-graph")) {
-				g = Graph.connectSandberg(nodes, Integer.valueOf(cmd.getOptionValue("sandberg-graph")), linkLengthSource);
-				} else if (cmd.hasOption("supernode-graph")) {
-					g = Graph.connectSuperNode(nodes, cmd.hasOption("lattice"));
-				} else if (cmd.hasOption("lattice")) {
-					g = Graph.connectGraphLattice(nodes, rand, linkLengthSource);
-				} else {
-				g = Graph.connectGraph(nodes, rand, linkLengthSource);
+			switch (arguments.graphGenerator) {
+				case SANDBERG: g = Graph.connectSandberg(nodes, arguments.shortcuts, linkLengthSource); break;
+				case SUPER_NODE: g = Graph.connectSuperNode(nodes, arguments.lattice); break;
+				case STANDARD:
+					if (arguments.lattice) g = Graph.connectGraphLattice(nodes, rand, linkLengthSource);
+					else g = Graph.connectGraph(nodes, rand, linkLengthSource);
+					break;
+				default: throw new IllegalStateException("Missing implementation piece for graph generation method " + arguments.graphGenerator.name());
 			}
 		}
 
-		if (!quiet) {
-			g.printGraphStats(verbose);
+		if (!arguments.quiet) {
+			g.printGraphStats(arguments.verbose);
 			System.out.println("Generation took (ms): " + (System.currentTimeMillis() - lastTime));
 			lastTime = System.currentTimeMillis();
 		}
@@ -355,25 +90,27 @@ public class RoutingSim {
 			avgStats[0][i][0] = indivStats[i];
 		}
 
-		if (cmd.hasOption("probe")) {
-			rand = new MersenneTwister(seed);
+		if (arguments.runProbe) {
+			// Re-initialize random number source so behavior here does not depend on previous usage, only the seed.
+			rand = new MersenneTwister(arguments.seed);
 			//Uniform probes if --metropolis-hastings is not specified.
-			probeDistribution(g, rand, maxHops, quiet, verbose, cmd.getOptionValue("output-probe"), !cmd.hasOption("metropolis-hastings"));
+			//TODO: Pass in checked directory.
+			probeDistribution(g, rand, arguments.maxHops, arguments.quiet, arguments.verbose, arguments.outputProbe, !arguments.metropolisHastings);
 		}
 
-		if (cmd.hasOption("route")) {
-			rand = new MersenneTwister(seed);
-			simulate(g, rand, nRequests, cmd.getOptionValue("output-route"), foldingPolicy, histogramOutput);
+		if (arguments.runRoute) {
+			rand = new MersenneTwister(arguments.seed);
+			simulate(g, rand, arguments.nRequests, arguments.outputRoute, arguments.foldingPolicy, histogramOutput);
 		}
 
-		if (cmd.hasOption("output-degree")) {
+		if (arguments.degreeOutput != null) {
 			int[] degrees = new int[g.maxDegree() + 1];
 			for (int degree : g.degrees()) {
 				degrees[degree]++;
 			}
 			for (int i = 0; i < g.maxDegree(); i++) {
 				try {
-					degreeOutput.write((i + " " + degrees[i] + "\n").getBytes());
+					arguments.degreeOutput.write((i + " " + degrees[i] + "\n").getBytes());
 				} catch (IOException e) {
 					System.out.println("Unexpected error encoding string for degree output:");
 					System.out.println(e);
@@ -383,13 +120,13 @@ public class RoutingSim {
 			}
 		}
 
-		if (cmd.hasOption("output-link")) {
-			ArrayList<Double> lengths = g.edgeLengths(cmd.hasOption("include-lattice"));
+		if (arguments.linkOutput != null) {
+			ArrayList<Double> lengths = g.edgeLengths(arguments.lattice);
 			//Output is intended for gnuplot CDF - second value is Y and should sum to 1.
 			double normalized = 1.0/lengths.size();
 			for (double length : lengths) {
 				try {
-					linkOutput.write((length + " " + normalized + "\n").getBytes());
+					arguments.linkOutput.write((length + " " + normalized + "\n").getBytes());
 				} catch (IOException e) {
 					System.out.println("Unexpected error encoding string for link length output:");
 					System.out.println(e);
@@ -399,14 +136,14 @@ public class RoutingSim {
 			}
 		}
 
-		if (cmd.hasOption("save-graph")) g.write(graphOutput);
+		if (arguments.graphOutput != null) g.write(arguments.graphOutput);
 
-		if (verbose) System.out.println();
-		if (!quiet) {
+		if (arguments.verbose) System.out.println();
+		if (!arguments.quiet) {
 			System.out.println("Time taken (ms): " + (System.currentTimeMillis() - lastTime));
 		}
 
-		if (!quiet) {
+		if (!arguments.quiet) {
 			System.out.println("Average stats:");
 			Graph.printGraphStatsHeader();
 			//TODO: Why is this hardcoded to 13?
