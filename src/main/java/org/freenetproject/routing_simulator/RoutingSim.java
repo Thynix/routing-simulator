@@ -330,10 +330,12 @@ public class RoutingSim {
 			if (cmd.hasOption("conforming-link")) linkLengthSource = new ConformingLinkSource(linkInput, rand, nodes);
 			else if (cmd.hasOption("ideal-link")) linkLengthSource = new KleinbergLinkSource(rand, nodes);
 			else if (cmd.hasOption("flat-link")) linkLengthSource = new UniformLinkSource(rand, nodes);
-			else throw new IllegalStateException("Link length distribution undefined.");
+			else /* if cmd.hasOption("supernode-graph") */ linkLengthSource = null;
 
 				if (cmd.hasOption("sandberg-graph")) {
 				g = Graph.connectSandberg(nodes, Integer.valueOf(cmd.getOptionValue("sandberg-graph")), linkLengthSource);
+				} else if (cmd.hasOption("supernode-graph")) {
+					g = Graph.connectSuperNode(nodes, cmd.hasOption("lattice"));
 				} else if (cmd.hasOption("lattice")) {
 					g = Graph.connectGraphLattice(nodes, rand, linkLengthSource);
 				} else {
