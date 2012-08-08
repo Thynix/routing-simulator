@@ -60,21 +60,6 @@ public class Graph {
 		return nodes;
 	}
 
-	private static class DistanceEntry implements Comparable<DistanceEntry> {
-		public final double distance;
-		public final int index;
-
-		public DistanceEntry(double distance, int index) {
-			this.distance = distance;
-			this.index = index;
-		}
-
-		@Override
-		public int compareTo(DistanceEntry other) {
-			return Double.compare(this.distance, other.distance);
-		}
-	}
-
 	/**
 	 * Connects a directed graph with lattice links between X and X - 1 mod N.
 	 * Each node has a single shortcut edge with an endpoint determined by the link length source.
