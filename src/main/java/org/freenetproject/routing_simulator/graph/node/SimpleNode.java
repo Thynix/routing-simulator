@@ -253,8 +253,14 @@ public class SimpleNode {
 		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
 
 		final SimpleNode endpoint;
-		if (iterator.hasPrevious()) endpoint = iterator.previous();
+		if (iterator.hasNext()) endpoint = iterator.next();
 		else return;
+
+		// Should have final element as endpoint.
+		assert endpoint.equals(nodeChain.get(nodeChain.size() - 1));
+
+		// Back up iterator to avoid attempting to fold endpoint to endpoint.
+		iterator.previous();
 
 		while (iterator.hasPrevious()) {
 			iterator.previous().offerShortcutFold(endpoint, 0.07, foldingPolicy);
@@ -302,6 +308,7 @@ public class SimpleNode {
 
 		// Local node is the closest. Dead end - success.
 		if (next == this) {
+			chain.add(this);
 			success(chain, foldingPolicy);
 			return;
 		}
@@ -310,6 +317,7 @@ public class SimpleNode {
 		hopsToLive--;
 
 		if (hopsToLive == 0) {
+			chain.add(this);
 			success(chain, foldingPolicy);
 		} else {
 			chain.add(this);
