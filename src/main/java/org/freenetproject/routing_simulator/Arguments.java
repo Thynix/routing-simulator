@@ -19,6 +19,7 @@ import org.freenetproject.routing_simulator.graph.node.SimpleNode;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 
@@ -284,7 +285,8 @@ public class Arguments {
 		}
 
 		//Check if output paths are directories that can be written to, and create them if they do not exist.
-		if (cmd.hasOption("output-probe") && !writableDirectory(cmd.getOptionValue("output-probe"))) return null;
+		final File probeOutputDirectory;
+		if (cmd.hasOption("output-probe") && (probeOutputDirectory = writableDirectory(cmd.getOptionValue("output-probe"))) == null) return null;
 
 		//Check that output files exist and are writable or can be created.
 		final DataOutputStream degreeOutput, linkOutput, graphOutput;
