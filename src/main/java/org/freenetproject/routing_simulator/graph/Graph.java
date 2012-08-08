@@ -361,7 +361,7 @@ public class Graph {
 	public int nEdges() {
 		// Indexes in <lesser, greater> order of a connection.
 		HashSet<Pair<Integer, Integer>> connections = new HashSet<Pair<Integer, Integer>>();
-		int directed = 0;
+		int undirected = 0;
 
 		for (SimpleNode origin : nodes) {
 			for (SimpleNode peer : origin.getConnections()) {
@@ -370,14 +370,14 @@ public class Graph {
 				 * which in this case is considered one directed edge.
 				 */
 				if (origin.index < peer.index) {
-					if (!connections.add(new Pair<Integer, Integer>(origin.index, peer.index))) directed++;
+					if (!connections.add(new Pair<Integer, Integer>(origin.index, peer.index))) undirected++;
 				} else {
-					if (!connections.add(new Pair<Integer, Integer>(peer.index, origin.index))) directed++;
+					if (!connections.add(new Pair<Integer, Integer>(peer.index, origin.index))) undirected++;
 				}
 			}
 		}
 
-		System.out.println("Out of the edges " + directed + " are undirected.");
+		System.out.println("Out of the edges " + undirected + " are undirected.");
 		return connections.size();
 	}
 
