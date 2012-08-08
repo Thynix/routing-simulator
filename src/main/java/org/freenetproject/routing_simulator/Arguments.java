@@ -34,7 +34,7 @@ import static org.freenetproject.routing_simulator.util.File.writableFile;
  */
 public class Arguments {
 
-	public final boolean quiet, verbose, lattice, fastGeneration, runProbe, metropolisHastings, runRoute;
+	public final boolean quiet, verbose, lattice, fastGeneration, runProbe, metropolisHastings, runRoute, includeLattice;
 	public final int seed, networkSize, shortcuts, maxHops, nRequests;
 	public final GraphGenerator graphGenerator;
 	public final DataInputStream degreeInput, linkInput, graphInput;
@@ -47,7 +47,7 @@ public class Arguments {
 
 	private static final RoutingPolicy ROUTING_DEFAULT = RoutingPolicy.GREEDY;
 
-	private Arguments(boolean quiet, boolean verbose, boolean lattice, boolean fastGeneration, boolean runProbe, boolean metropolisHastings, boolean runRoute,
+	private Arguments(boolean quiet, boolean verbose, boolean lattice, boolean fastGeneration, boolean runProbe, boolean metropolisHastings, boolean runRoute, boolean includeLattice,
 	                  int seed, int networkSize, int shortcuts, int maxHops, int nRequests,
 	                  GraphGenerator graphGenerator,
 	                  DataInputStream degreeInput, DataInputStream linkInput, DataInputStream graphInput,
@@ -80,6 +80,7 @@ public class Arguments {
 		this.outputRoute = outputRoute;
 		this.foldingPolicy = foldingPolicy;
 		this.routingPolicy = routingPolicy;
+		this.includeLattice = includeLattice;
 		this.cmd = cmd;
 	}
 
@@ -335,7 +336,7 @@ public class Arguments {
 		final int maxHops = cmd.hasOption("probe") ? Integer.valueOf(cmd.getOptionValue("probe")) : 0;
 		final int shortcuts = cmd.hasOption("sandberg-graph") ? Integer.valueOf(cmd.getOptionValue("sandberg-graph")) : 0;
 
-		return new Arguments(quiet, verbose, lattice, fastGeneration, cmd.hasOption("probe"), cmd.hasOption("metropolis-hastings"), cmd.hasOption("route"),
+		return new Arguments(quiet, verbose, lattice, fastGeneration, cmd.hasOption("probe"), cmd.hasOption("metropolis-hastings"), cmd.hasOption("route"), cmd.hasOption("include-lattice"),
 		                     seed, networkSize, shortcuts, maxHops, nRequests,
 		                     graphGenerator,
 		                     degreeInput, linkInput, graphInput,

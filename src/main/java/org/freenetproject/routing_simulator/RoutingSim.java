@@ -121,7 +121,7 @@ public class RoutingSim {
 		}
 
 		if (arguments.linkOutput != null) {
-			ArrayList<Double> lengths = g.edgeLengths(arguments.lattice);
+			ArrayList<Double> lengths = g.edgeLengths(arguments.includeLattice);
 			//Output is intended for gnuplot CDF - second value is Y and should sum to 1.
 			double normalized = 1.0/lengths.size();
 			for (double length : lengths) {
