@@ -114,9 +114,13 @@ public class Graph {
 		assert nEdges() == 0;
 
 		for (int i = 0; i < size(); i++) {
-			final SimpleNode from = getNode(i);
-			// Should wrap to N - 1 at -1.
-			final SimpleNode to = getNode(((i - 1) % size() + size()) % size());
+			/*
+			 * From X to X - 1, wrapped to the network size. Java implements modulus such that it produces
+			 * -1 for -1 % N, not N - 1 as it does in the definition of the lattice links. Going from
+			 * X + 1 to X is equivalent.
+			 */
+			final SimpleNode from = getNode((i + 1) % size());
+			final SimpleNode to = getNode(i);
 			if (from.isConnected(to) || to.isConnected(from)) {
 				throw new IllegalStateException("Connection already existed.");
 			}
