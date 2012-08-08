@@ -100,7 +100,7 @@ public class RoutingSim {
 
 		if (arguments.runRoute) {
 			rand = new MersenneTwister(arguments.seed);
-			simulate(g, rand, arguments.nRequests, arguments.outputRoute, arguments.foldingPolicy, histogramOutput);
+			simulate(g, rand, arguments.nRequests, arguments.outputRoute, arguments.foldingPolicy, arguments.routingPolicy, histogramOutput);
 		}
 
 		if (arguments.degreeOutput != null) {
@@ -253,7 +253,7 @@ public class RoutingSim {
 	}
 
 	private static void simulate(Graph g, RandomGenerator rand, int nRequests, final String outputPath,
-	                             final FoldingPolicy policy, final PrintStream[] histogramOutput) {
+	                             final FoldingPolicy foldingPolicy, final RoutingPolicy routingPolicy, final PrintStream[] histogramOutput) {
 		/*File outputFile = new File(outputPath);
 		PrintStream stream = null;
 		try {
@@ -268,7 +268,13 @@ public class RoutingSim {
 
 		for (int i = 0; i < nRequests; i++) {
 			final SimpleNode origin = g.getNode(rand.nextInt(g.size()));
-			origin.greedyRoute(rand.nextDouble(), 50, policy);
+			/*
+			 * It causes distortion to select among node locations for destinations as they may be less
+			 * evenly distributed, but it allows determining if a request was routed exactly based on
+			 * whether the target location is equal.
+			 */
+			final SimpleNode destination = g.getNode(rand.nextInt(g.size()));
+			origin.route(destination.getLocation(), 50, routingPolicy, foldingPolicy);
 		}
 		//TODO: This is only used in 2D capacity in one line: can make 1D?
 		//Request[][] requests = new Request[nRequests][nIntersectTests];

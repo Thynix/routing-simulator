@@ -41,8 +41,11 @@ public class Arguments {
 	public final DataOutputStream degreeOutput, linkOutput, graphOutput;
 	public final String outputProbe, outputRoute;
 	public final FoldingPolicy foldingPolicy;
+	public final RoutingPolicy routingPolicy;
 
 	private final CommandLine cmd;
+
+	private static final RoutingPolicy ROUTING_DEFAULT = RoutingPolicy.GREEDY;
 
 	private Arguments(boolean quiet, boolean verbose, boolean lattice, boolean fastGeneration, boolean runProbe, boolean metropolisHastings, boolean runRoute,
 	                  int seed, int networkSize, int shortcuts, int maxHops, int nRequests,
@@ -51,6 +54,7 @@ public class Arguments {
 	                  DataOutputStream degreeOutput, DataOutputStream linkOutput, DataOutputStream graphOutput,
 	                  String outputProbe, String outputRoute,
 	                  FoldingPolicy foldingPolicy,
+	                  RoutingPolicy routingPolicy,
 	                  CommandLine cmd) {
 
 		this.quiet = quiet;
@@ -75,6 +79,7 @@ public class Arguments {
 		this.outputProbe = outputProbe;
 		this.outputRoute = outputRoute;
 		this.foldingPolicy = foldingPolicy;
+		this.routingPolicy = routingPolicy;
 		this.cmd = cmd;
 	}
 
@@ -140,6 +145,11 @@ public class Arguments {
 		StringBuilder description = new StringBuilder("Path folding policy:");
 		for (FoldingPolicy policy : FoldingPolicy.values()) description.append(" ").append(policy);
 		options.addOption("P", "fold-policy", true,  description.toString());
+
+		description = new StringBuilder("Routing policy used. Default is " + ROUTING_DEFAULT.name() +". Possible policies:");
+		for (RoutingPolicy policy : RoutingPolicy.values()) description.append(" ").append(policy.name());
+		options.addOption("r", "route-policy", true, description.toString());
+
 		options.addOption("H", "output-hops", true, "Base filename to output hop histograms for each sink policy. Appended with -<policy-num> for each.");
 
 		//Simulations: Probe distribution
@@ -273,6 +283,23 @@ public class Arguments {
 			foldingPolicy = FoldingPolicy.NONE;
 		}
 
+		final RoutingPolicy routingPolicy;
+		if (cmd.hasOption("route-policy")) {
+			final String policy = cmd.getOptionValue("route-policy");
+			try {
+				routingPolicy = RoutingPolicy.valueOf(policy);
+			} catch (IllegalArgumentException e) {
+				System.out.println("The routing policy \"" + policy + "\" is invalid.");
+				System.out.println("Possible values are:");
+				for (RoutingPolicy policyName : RoutingPolicy.values()) {
+					System.out.println(policyName.toString());
+				}
+				return null;
+			}
+		} else {
+			routingPolicy = ROUTING_DEFAULT;
+		}
+
 		//Check for problems with specified paths.
 		//Check if input files can be read.
 		final DataInputStream degreeInput, linkInput, graphInput;
@@ -315,6 +342,7 @@ public class Arguments {
 		                     degreeOutput, linkOutput, graphOutput,
 		                     cmd.getOptionValue("output-probe"), cmd.getOptionValue("output-route"),
 		                     foldingPolicy,
+                                     routingPolicy,
 		                     cmd);
 	}
 }

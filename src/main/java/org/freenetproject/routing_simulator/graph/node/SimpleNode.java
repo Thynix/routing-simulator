@@ -2,13 +2,16 @@ package org.freenetproject.routing_simulator.graph.node;
 
 import org.apache.commons.math3.random.RandomGenerator;
 import org.freenetproject.routing_simulator.FoldingPolicy;
+import org.freenetproject.routing_simulator.RoutingPolicy;
 import org.freenetproject.routing_simulator.graph.Location;
+import org.freenetproject.routing_simulator.util.DistanceEntry;
 import org.freenetproject.routing_simulator.util.lru.LRUQueue;
 
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.ListIterator;
 
 /**
@@ -289,15 +292,41 @@ public class SimpleNode {
 	 * @param target Location to route to.
 	 * @param hopsToLive Maximum number of additional hops.
 	 * @param foldingPolicy Path folding policy to use on success.
+	 *
 	 */
-	public void greedyRoute(final double target, final int hopsToLive, final FoldingPolicy foldingPolicy) {
-		greedyRoute(target, hopsToLive, foldingPolicy, new ArrayList<SimpleNode>());
+	public void route(final double target, final int hopsToLive, final RoutingPolicy routingPolicy, final FoldingPolicy foldingPolicy) {
+		switch (routingPolicy) {
+		case GREEDY: greedyRoute(target, hopsToLive, false, foldingPolicy, new ArrayList<SimpleNode>()); break;
+		//TODO: might be cleaner to use different routing method internally? Some degree of duplication but might read more nicely.
+		case LOOP_DETECTION: greedyRoute(target, hopsToLive, true, foldingPolicy, new ArrayList<SimpleNode>()); break;
+		}
 	}
 
-	private void greedyRoute(final double target, int hopsToLive, final FoldingPolicy foldingPolicy, final ArrayList<SimpleNode> chain) {
+	private void greedyRoute(final double target, int hopsToLive, final boolean loopDetection, final FoldingPolicy foldingPolicy, final ArrayList<SimpleNode> chain) {
 		if (hopsToLive <= 0) throw new IllegalStateException("hopsToLive must be positive. It is " + hopsToLive);
 		// Find node closest to target. Start out assuming this node is the closest.
 		SimpleNode next = this;
+		if (loopDetection) {
+			ArrayList<DistanceEntry> distances = new ArrayList<DistanceEntry>(this.degree());
+			for (SimpleNode peer : this.getConnections()) {
+				distances.add(new DistanceEntry(this.distanceTo(peer), peer));
+			}
+			Collections.sort(distances);
+
+			if (distances.size() > 0) {
+				next = distances.get(0).node;
+
+				while (chain.contains(next)) {
+					distances.remove(0);
+					if (distances.size() > 0) next = distances.get(0).node;
+					else {
+						// No peers remaining that would not result in a loop.
+						next = this;
+						break;
+					}
+				}
+			}
+		} else {
 		double closest = distanceToLoc(target);
 
 		// Check peer distances.
@@ -308,9 +337,18 @@ public class SimpleNode {
 				closest = distance;
 			}
 		}
+		}
 
-		// Local node is the closest. Dead end - success.
+		/*
+		 * Local node is the closest, (without loop detection) or has no peers which have not already been
+		 * visited. (loop detection) Dead end.
+		 */
 		if (next == this) {
+			/*
+			 * Check whether the request reached its destination, which was selected from among node
+			 * locations.
+			 */
+			if (loopDetection && this.getLocation() != target) return;
 			chain.add(this);
 			success(chain, foldingPolicy);
 			return;
@@ -320,11 +358,12 @@ public class SimpleNode {
 		hopsToLive--;
 
 		if (hopsToLive == 0) {
+			if (loopDetection && this.getLocation() != target) return;
 			chain.add(this);
 			success(chain, foldingPolicy);
 		} else {
 			chain.add(this);
-			next.greedyRoute(target, hopsToLive, foldingPolicy, chain);
+			next.greedyRoute(target, hopsToLive, loopDetection, foldingPolicy, chain);
 		}
 	}
 
