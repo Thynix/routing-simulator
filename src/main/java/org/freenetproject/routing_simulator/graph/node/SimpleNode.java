@@ -203,7 +203,10 @@ public class SimpleNode {
 		if (endpoint == this) return false;
 		// Do not path fold to a node which is already connected.
 		if (this.connections.contains(endpoint)) return false;
-		if (rand.nextDouble() < (1.0 - acceptanceRate)) return false;
+		if (atDegree() && rand.nextDouble() < (1.0 - acceptanceRate)) return false;
+		// More likely to accept if not at degree.
+		else if (!atDegree() && rand.nextDouble() < (1.2 - acceptanceRate)) return false;
+
 
 		final int latticeLinks;
 		if (foldingPolicy == FoldingPolicy.SANDBERG) latticeLinks = 2;
