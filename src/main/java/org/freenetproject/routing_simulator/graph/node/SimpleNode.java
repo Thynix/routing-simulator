@@ -130,7 +130,7 @@ public class SimpleNode {
 		// Do not path fold to self.
 		if (peer == this) return false;
 		// Do not path fold to a node which is already connected. TODO: Connections undirected - both should be true if either is.
-		if (this.connections.contains(peer) || peer.connections.contains(this)) return false;
+		if (this.isConnected(peer) || peer.isConnected(this)) return false;
 		if ((atDegree() || !peer.atDegree()) && rand.nextDouble() < (1.0 - acceptanceRate)) return false;
 
 		// Disconnect from least, but restore invariant that both are in each other's LRU queues.
