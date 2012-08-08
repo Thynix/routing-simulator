@@ -78,10 +78,10 @@ public class Graph {
 			SimpleNode endpoint;
 			// -1 to account for the single lattice edge.
 			while (origin.degree() - 1 < shortcuts) {
-			do {
-				endpoint = linkLengthSource.getPeer(origin);
-			} while (origin.isConnected(endpoint));
-			origin.connectOutgoing(endpoint);
+				do {
+					endpoint = linkLengthSource.getPeer(origin);
+				} while (origin.isConnected(endpoint));
+				origin.connectOutgoing(endpoint);
 			}
 		}
 
@@ -210,9 +210,9 @@ public class Graph {
 			int writtenConnections = 0;
 			for (SimpleNode from : nodes) {
 				for (SimpleNode to : from.getConnections()) {
-						writtenConnections++;
-						connectionIndexes.add(from.index);
-						connectionIndexes.add(to.index);
+					writtenConnections++;
+					connectionIndexes.add(from.index);
+					connectionIndexes.add(to.index);
 				}
 			}
 

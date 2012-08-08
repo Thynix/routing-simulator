@@ -8,7 +8,7 @@ public class Location {
 	/**
 	 * Return the minimum circular distance between two locations.
 	 * Locations must be in [0,1).
-	 * 
+	 *
 	 * @param a First location
 	 * @param b Second location
 	 * @return Distance between a and b

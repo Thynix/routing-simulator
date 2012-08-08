@@ -138,12 +138,12 @@ public class SimpleNode {
 
 		// Disconnect from least, but restore invariant that both are in each other's LRU queues.
 		if (atDegree()) {
-		final SimpleNode least = lruQueue.pop();
-		if (least == null) return false;
-		lruQueue.pushLeast(least);
+			final SimpleNode least = lruQueue.pop();
+			if (least == null) return false;
+			lruQueue.pushLeast(least);
 
-		//checkInvariants(least, ConnectionState.CONNECTED);
-		disconnect(least);
+			//checkInvariants(least, ConnectionState.CONNECTED);
+			disconnect(least);
 		}
 		//checkInvariants(least, ConnectionState.DISCONNECTED);
 
@@ -241,8 +241,8 @@ public class SimpleNode {
 			connect(endpoint);
 			assert this.isConnected(endpoint) && endpoint.isConnected(this);
 		} else /*if (foldingPolicy == FoldingPolicy.SANDBERG_DIRECTED)*/ {
-		disconnectOutgoing(disconnected);
-		connectOutgoing(endpoint);
+			disconnectOutgoing(disconnected);
+			connectOutgoing(endpoint);
 		}
 
 		return true;
@@ -296,9 +296,9 @@ public class SimpleNode {
 	 */
 	public void route(final double target, final int hopsToLive, final RoutingPolicy routingPolicy, final FoldingPolicy foldingPolicy) {
 		switch (routingPolicy) {
-		case GREEDY: greedyRoute(target, hopsToLive, false, foldingPolicy, new ArrayList<SimpleNode>()); break;
-		//TODO: might be cleaner to use different routing method internally? Some degree of duplication but might read more nicely.
-		case LOOP_DETECTION: greedyRoute(target, hopsToLive, true, foldingPolicy, new ArrayList<SimpleNode>()); break;
+			case GREEDY: greedyRoute(target, hopsToLive, false, foldingPolicy, new ArrayList<SimpleNode>()); break;
+			//TODO: might be cleaner to use different routing method internally? Some degree of duplication but might read more nicely.
+			case LOOP_DETECTION: greedyRoute(target, hopsToLive, true, foldingPolicy, new ArrayList<SimpleNode>()); break;
 		}
 	}
 
@@ -327,16 +327,16 @@ public class SimpleNode {
 				}
 			}
 		} else {
-		double closest = distanceToLoc(target);
+			double closest = distanceToLoc(target);
 
-		// Check peer distances.
-		for (SimpleNode peer : connections) {
-			double distance = peer.distanceToLoc(target);
-			if (distance < closest) {
-				next = peer;
-				closest = distance;
+			// Check peer distances.
+			for (SimpleNode peer : connections) {
+				double distance = peer.distanceToLoc(target);
+				if (distance < closest) {
+					next = peer;
+					closest = distance;
+				}
 			}
-		}
 		}
 
 		/*
