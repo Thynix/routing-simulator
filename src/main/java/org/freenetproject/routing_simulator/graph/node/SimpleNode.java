@@ -306,6 +306,17 @@ public class SimpleNode {
 
 	private boolean greedyRoute(final double target, int hopsToLive, final boolean loopDetection, final FoldingPolicy foldingPolicy, final ArrayList<SimpleNode> chain) {
 		if (hopsToLive <= 0) throw new IllegalStateException("hopsToLive must be positive. It is " + hopsToLive);
+
+		/*
+		 * Check whether the request reached its destination, which was selected from among node
+		 * locations.
+		 */
+		if (this.getLocation() == target) {
+			chain.add(this);
+			success(chain, foldingPolicy);
+			return true;
+		}
+
 		// Find node closest to target. Start out assuming this node is the closest.
 		SimpleNode next = this;
 		if (loopDetection) {
@@ -341,20 +352,8 @@ public class SimpleNode {
 			}
 		}
 
-		/*
-		 * Local node is the closest, (without loop detection) or has no peers which have not already been
-		 * visited. (loop detection) Dead end.
-		 */
-		if (next == this) {
-			/*
-			 * Check whether the request reached its destination, which was selected from among node
-			 * locations.
-			 */
-			if (loopDetection && this.getLocation() != target) return false;
-			chain.add(this);
-			success(chain, foldingPolicy);
-			return true;
-		}
+		// Nowhere is closer or available, and this node is not the target one.
+		if (next == this) return false;
 
 		//TODO: Probabilistic decrement
 		hopsToLive--;
