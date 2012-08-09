@@ -197,7 +197,8 @@ public class SimpleNode {
 	 * @return whether the fold was executed.
 	 */
 	private boolean offerShortcutFold(final SimpleNode endpoint, final double acceptanceRate, final FoldingPolicy foldingPolicy) {
-		if (foldingPolicy != FoldingPolicy.SANDBERG && foldingPolicy != FoldingPolicy.SANDBERG_DIRECTED) {
+		if (foldingPolicy != FoldingPolicy.SANDBERG && foldingPolicy != FoldingPolicy.SANDBERG_DIRECTED
+		     && foldingPolicy != FoldingPolicy.SANDBERG_NO_LATTICE) {
 			throw new IllegalArgumentException("Attempted to use shortcut folding with policy " + foldingPolicy);
 		}
 		//TODO: connections size is number of shortcuts + 1 (1 for the lattice link)
@@ -213,7 +214,8 @@ public class SimpleNode {
 
 		final int latticeLinks;
 		if (foldingPolicy == FoldingPolicy.SANDBERG) latticeLinks = 2;
-		else /*if (foldingPolicy == FoldingPolicy.SANDBERG_DIRECTED)*/ latticeLinks = 1;
+		else if (foldingPolicy == FoldingPolicy.SANDBERG_DIRECTED) latticeLinks = 1;
+		else /*if(foldingPolicy == FoldingPolicy.SANDBERG_NO_LATTICE)*/ latticeLinks = 0;
 
 		// A node should always have its lattice links.
 		assert degree() >= latticeLinks;
@@ -230,7 +232,7 @@ public class SimpleNode {
 		int disconnectedShortcut = rand.nextInt(degree() - latticeLinks) + latticeLinks;
 		final SimpleNode disconnected = connections.get(disconnectedShortcut);
 
-		// Can't leave node that's being disconnected without its lattice links.
+		// Can't leave node that's being disconnected without its lattice links, if any.
 		assert disconnected.degree() > latticeLinks;
 
 		if (foldingPolicy == FoldingPolicy.SANDBERG) {
@@ -249,11 +251,14 @@ public class SimpleNode {
 	}
 
 	/**
-	 * Offers a connection to the endpoint to every other node.
+	 * Offers a connection to the endpoint to every other node. Does not affect lattice links, the number of
+	 * which is determined based on the folding policy. Number of lattice links is documented on each folding
+	 * policy enum.
 	 * @param nodeChain  Nodes which make up the path the request has followed. First element is the origin of the
 	 *                   request; last is the endpoint.
 	 * @param foldingPolicy Folds with either SANDBERG (Undirected and first two connections lattice) or
 	 *                      SANDBERG_DIRECTED policy. (Directed and first connection lattice.)
+	 * @see org.freenetproject.routing_simulator.FoldingPolicy
 	 */
 	private static void successSandberg(final ArrayList<SimpleNode> nodeChain, FoldingPolicy foldingPolicy) {
 		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
@@ -279,8 +284,10 @@ public class SimpleNode {
 		switch (policy) {
 		case NONE: return;
 		case FREENET: successFreenet(nodeChain); break;
-		case SANDBERG: successSandberg(nodeChain, FoldingPolicy.SANDBERG); break;
-		case SANDBERG_DIRECTED: successSandberg(nodeChain, FoldingPolicy.SANDBERG_DIRECTED); break;
+		case SANDBERG_NO_LATTICE:
+		case SANDBERG:
+		case SANDBERG_DIRECTED: successSandberg(nodeChain, policy); break;
+		default: throw new IllegalStateException("Missing folding implementation for policy " + policy.name());
 		}
 	}
 

@@ -10,11 +10,15 @@ public enum FoldingPolicy {
 	 */
 	FREENET,
 	/**
-	 * Path fold to endpoint only.
+	 * Path fold to endpoint only. Undirected network with lattice edges.
 	 */
 	SANDBERG,
 	/**
-	 * Path fold to endpoint only with directed shortcut edges.
+	 * Path fold to endpoint only. Directed network with lattice edges.
 	 */
-	SANDBERG_DIRECTED
+	SANDBERG_DIRECTED,
+	/**
+	 * Path fold to endpoint only. Undirected network with no lattice edges.
+	 */
+	SANDBERG_NO_LATTICE
 }
