@@ -220,8 +220,8 @@ public class SimpleNode {
 
 		// No shortcuts remain - accept the incoming.
 		if (degree() == latticeLinks) {
-			// The time at which a node should be able to lose shortcuts
-			assert foldingPolicy == FoldingPolicy.SANDBERG;
+			// A node should not be able to lose its shortcut link if it is just moving it.
+			assert foldingPolicy != FoldingPolicy.SANDBERG_DIRECTED;
 			connect(endpoint);
 			return true;
 		}
