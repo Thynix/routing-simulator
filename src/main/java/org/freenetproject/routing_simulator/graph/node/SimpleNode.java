@@ -309,7 +309,7 @@ public class SimpleNode {
 		if (loopDetection) {
 			ArrayList<DistanceEntry> distances = new ArrayList<DistanceEntry>(this.degree());
 			for (SimpleNode peer : this.getConnections()) {
-				distances.add(new DistanceEntry(this.distanceTo(peer), peer));
+				distances.add(new DistanceEntry(peer.distanceToLoc(target), peer));
 			}
 			Collections.sort(distances);
 
