@@ -235,7 +235,7 @@ public class SimpleNode {
 		// Can't leave node that's being disconnected without its lattice links, if any.
 		assert disconnected.degree() > latticeLinks;
 
-		if (foldingPolicy == FoldingPolicy.SANDBERG) {
+		if (foldingPolicy == FoldingPolicy.SANDBERG || foldingPolicy == FoldingPolicy.SANDBERG_NO_LATTICE) {
 			assert !this.isConnected(endpoint) && !endpoint.isConnected(this);
 			assert this.isConnected(disconnected) && disconnected.isConnected(this);
 			disconnect(disconnected);
