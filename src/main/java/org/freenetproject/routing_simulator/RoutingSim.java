@@ -100,7 +100,7 @@ public class RoutingSim {
 
 		if (arguments.runRoute) {
 			rand = new MersenneTwister(arguments.seed);
-			simulate(g, rand, arguments.nRequests, arguments.outputRoute, arguments.foldingPolicy, arguments.routingPolicy, histogramOutput);
+			simulate(g, rand, arguments.nRequests, arguments.foldingPolicy, arguments.routingPolicy);
 		}
 
 		if (arguments.degreeOutput != null) {
@@ -252,9 +252,7 @@ public class RoutingSim {
 		}
 	}
 
-	private static void simulate(Graph g, RandomGenerator rand, int nRequests, final String outputPath,
-	                             final FoldingPolicy foldingPolicy, final RoutingPolicy routingPolicy, final PrintStream[] histogramOutput) {
-
+	private static void simulate(Graph g, RandomGenerator rand, int nRequests, final FoldingPolicy foldingPolicy, final RoutingPolicy routingPolicy) {
 
 		for (int i = 0; i < nRequests; i++) {
 			final SimpleNode origin = g.getNode(rand.nextInt(g.size()));
