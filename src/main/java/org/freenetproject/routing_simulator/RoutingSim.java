@@ -254,6 +254,7 @@ public class RoutingSim {
 
 	private static void simulate(Graph g, RandomGenerator rand, int nRequests, final FoldingPolicy foldingPolicy, final RoutingPolicy routingPolicy) {
 
+		int successes = 0;
 		for (int i = 0; i < nRequests; i++) {
 			final SimpleNode origin = g.getNode(rand.nextInt(g.size()));
 			/*
@@ -262,8 +263,9 @@ public class RoutingSim {
 			 * whether the target location is equal.
 			 */
 			final SimpleNode destination = g.getNode(rand.nextInt(g.size()));
-			origin.route(destination.getLocation(), 50, routingPolicy, foldingPolicy);
+			if (origin.route(destination, 50, routingPolicy, foldingPolicy)) successes++;
 		}
+		System.out.println("Routing success rate: " + (double)successes / nRequests * 100);
 	}
 
 	/**

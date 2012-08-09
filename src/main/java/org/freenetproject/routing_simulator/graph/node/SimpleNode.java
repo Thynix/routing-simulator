@@ -289,20 +289,22 @@ public class SimpleNode {
 	 * local node is the closest to the target out of itself and all its neighbors. When that happens, it performs
 	 * path folds with the specified policy.
 	 *
-	 * @param target Location to route to.
+	 * @param target Node to route to.
 	 * @param hopsToLive Maximum number of additional hops.
 	 * @param foldingPolicy Path folding policy to use on success.
+	 * @return Routing was successful: the target location was reached.
 	 *
 	 */
-	public void route(final double target, final int hopsToLive, final RoutingPolicy routingPolicy, final FoldingPolicy foldingPolicy) {
+	public boolean route(final SimpleNode target, final int hopsToLive, final RoutingPolicy routingPolicy, final FoldingPolicy foldingPolicy) {
 		switch (routingPolicy) {
-			case GREEDY: greedyRoute(target, hopsToLive, false, foldingPolicy, new ArrayList<SimpleNode>()); break;
+			case GREEDY: return greedyRoute(target.getLocation(), hopsToLive, false, foldingPolicy, new ArrayList<SimpleNode>());
 			//TODO: might be cleaner to use different routing method internally? Some degree of duplication but might read more nicely.
-			case LOOP_DETECTION: greedyRoute(target, hopsToLive, true, foldingPolicy, new ArrayList<SimpleNode>()); break;
+			case LOOP_DETECTION: return greedyRoute(target.getLocation(), hopsToLive, true, foldingPolicy, new ArrayList<SimpleNode>());
+			default: throw new IllegalStateException("Routing for policy " + routingPolicy.name() + " not implemented.");
 		}
 	}
 
-	private void greedyRoute(final double target, int hopsToLive, final boolean loopDetection, final FoldingPolicy foldingPolicy, final ArrayList<SimpleNode> chain) {
+	private boolean greedyRoute(final double target, int hopsToLive, final boolean loopDetection, final FoldingPolicy foldingPolicy, final ArrayList<SimpleNode> chain) {
 		if (hopsToLive <= 0) throw new IllegalStateException("hopsToLive must be positive. It is " + hopsToLive);
 		// Find node closest to target. Start out assuming this node is the closest.
 		SimpleNode next = this;
@@ -348,22 +350,23 @@ public class SimpleNode {
 			 * Check whether the request reached its destination, which was selected from among node
 			 * locations.
 			 */
-			if (loopDetection && this.getLocation() != target) return;
+			if (loopDetection && this.getLocation() != target) return false;
 			chain.add(this);
 			success(chain, foldingPolicy);
-			return;
+			return true;
 		}
 
 		//TODO: Probabilistic decrement
 		hopsToLive--;
 
 		if (hopsToLive == 0) {
-			if (loopDetection && this.getLocation() != target) return;
+			if (loopDetection && this.getLocation() != target) return false;
 			chain.add(this);
 			success(chain, foldingPolicy);
+			return true;
 		} else {
 			chain.add(this);
-			next.greedyRoute(target, hopsToLive, loopDetection, foldingPolicy, chain);
+			return next.greedyRoute(target, hopsToLive, loopDetection, foldingPolicy, chain);
 		}
 	}
 
