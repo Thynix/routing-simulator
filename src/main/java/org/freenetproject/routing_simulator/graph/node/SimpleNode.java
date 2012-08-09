@@ -201,15 +201,12 @@ public class SimpleNode {
 		     && foldingPolicy != FoldingPolicy.SANDBERG_NO_LATTICE) {
 			throw new IllegalArgumentException("Attempted to use shortcut folding with policy " + foldingPolicy);
 		}
-		//TODO: connections size is number of shortcuts + 1 (1 for the lattice link)
-		//assert connections.size() == 2;
 		// Do not path fold to self.
 		if (endpoint == this) return false;
 		// Do not path fold to a node which is already connected.
 		if (this.connections.contains(endpoint)) return false;
-		if (atDegree() && rand.nextDouble() < (1.0 - acceptanceRate)) return false;
-		// More likely to accept if not at degree.
-		else if (!atDegree() && rand.nextDouble() < (1.2 - acceptanceRate)) return false;
+		if (atDegree() && rand.nextDouble() < acceptanceRate) return false;
+		// Always accept if not at degree.
 
 
 		final int latticeLinks;
