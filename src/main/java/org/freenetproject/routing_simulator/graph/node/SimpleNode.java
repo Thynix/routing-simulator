@@ -173,9 +173,16 @@ public class SimpleNode {
 		// Iterate starting at the end.
 		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
 
+		// Get final element.
 		SimpleNode foldingFrom;
-		if (iterator.hasPrevious()) foldingFrom = iterator.previous();
-		else return;
+		if (iterator.hasNext()) foldingFrom = iterator.next();
+		else return new ArrayList<SimpleNode>();
+
+		// Reverse so that previous() does not get the endpoint again.
+		iterator.previous();
+
+		// Should have final element as endpoint.
+		assert foldingFrom.equals(nodeChain.get(nodeChain.size() - 1));
 
 		//Start from the second-to-last node.
 		while (iterator.hasPrevious()) {
