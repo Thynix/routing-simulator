@@ -370,7 +370,6 @@ public class SimpleNode {
 		hopsToLive--;
 
 		if (hopsToLive == 0) {
-			if (loopDetection && this.getLocation() != target) return false;
 			chain.add(this);
 			success(chain, foldingPolicy);
 			return true;
