@@ -144,12 +144,12 @@ public class SimpleNode {
 		// If already at degree, don't fold if not accepted.
 		if (atDegree() && rand.nextDouble() > acceptanceRate) return false;
 
-		final SimpleNode least = disconnectCandidate();
+		final SimpleNode least = peer.disconnectCandidate();
 
 		// Initial degree sum over all nodes involved. This should remain invariant.
 		final int initialDegree = degree() + least.degree() + peer.degree();
 
-		disconnect(least);
+		peer.disconnect(least);
 
 		// Peers added via path folding are added to the end.
 		connect(peer);
@@ -201,7 +201,7 @@ public class SimpleNode {
 			//If the path fold is accepted, the one before the accepting one starts another fold.
 			//Use 7% acceptance as rough result from my node.
 			// If the fold is accepted and there was a candidate for disconnection, add it.
-			final SimpleNode candidate = foldingTo.disconnectCandidate();
+			final SimpleNode candidate = foldingFrom.disconnectCandidate();
 			if (foldingTo.offerPathFold(foldingFrom, 0.07)) {
 				if (candidate != null && candidate.degree() == 0) disconnected.add(candidate);
 				if (iterator.hasPrevious()) {
