@@ -419,13 +419,16 @@ public class SimpleNode {
 	}
 
 	/**
-	 * Disconnect from a random peer, and connect to the given one.
+	 * Disconnect from a random peer, and connect to the given one. Must have at least one connection which can be
+	 * dropped.
 	 *
 	 * @param peer node to connect to.
 	 *
 	 * @return Peer disconnected from.
 	 */
 	public SimpleNode swapConnections(SimpleNode peer) {
+		// Must have at least one connection to drop one.
+		assert degree() > 0;
 		final SimpleNode disconnected = connections.get(rand.nextInt(connections.size()));
 
 		final int initalDegree = degree() + disconnected.degree() + peer.degree();
