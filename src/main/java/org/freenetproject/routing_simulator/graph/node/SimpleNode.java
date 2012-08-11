@@ -174,23 +174,24 @@ public class SimpleNode {
 	 */
 	private static ArrayList<SimpleNode> successFreenet(final ArrayList<SimpleNode> nodeChain) {
 		//TODO: Include HTL in the chain to test not path folding at high HTL.
-		//TODO: Immediate peers should also be bumped up in the LRU upon success.
-		// Iterate starting at the end.
-		final ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
+		// Iterate uses previous(); first node is size() - 2: second-to-last as intended.
+		ListIterator<SimpleNode> iterator = nodeChain.listIterator(nodeChain.size() - 1);
 
+		// TODO: More general variable name - from?
 		// Get final element.
-		SimpleNode foldingFrom;
-		if (iterator.hasNext()) foldingFrom = iterator.next();
-		else return new ArrayList<SimpleNode>();
+		SimpleNode foldingFrom = nodeChain.get(nodeChain.size() - 1);
 
-		// Reverse so that previous() does not get the endpoint again.
-		iterator.previous();
-
-		// Should have final element as endpoint.
-		assert foldingFrom.equals(nodeChain.get(nodeChain.size() - 1));
+		// Promote successful peers in the LRU queue.
+		while (iterator.hasPrevious()) {
+			SimpleNode to = iterator.previous();
+			assert to.isConnected(foldingFrom);
+			to.lruQueue.push(foldingFrom);
+			foldingFrom = to;
+		}
 
 		final ArrayList<SimpleNode> disconnected = new ArrayList<SimpleNode>();
-		//Start from the second-to-last node.
+		iterator = nodeChain.listIterator(nodeChain.size() - 1);
+		// Fold starting from the second-to-last node.
 		while (iterator.hasPrevious()) {
 			final SimpleNode foldingTo = iterator.previous();
 			// Do not path fold to self.
