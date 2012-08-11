@@ -17,7 +17,9 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.ListIterator;
+import java.util.Queue;
 
 /**
  * Class to perform routing simulations on Graphs.
@@ -256,7 +258,7 @@ public class RoutingSim {
 
 	private static void simulate(Graph g, RandomGenerator rand, int nRequests, final FoldingPolicy foldingPolicy, final RoutingPolicy routingPolicy, final boolean bootstrap) {
 
-		int successes = 0;
+		int successes = 0, disconnectedFolding = 0, disconnectedBootstrap = 0;
 		for (int i = 0; i < nRequests; i++) {
 			final SimpleNode origin = g.getNode(rand.nextInt(g.size()));
 			/*
@@ -276,13 +278,17 @@ public class RoutingSim {
 			 * Bootstrapping will drop connections when making new ones so that the total connection count
 			 * remains the same; additional nodes may become disconnected in the process.
 			 */
-			ListIterator<SimpleNode> disconnected = result.disconnected.listIterator();
-			while (disconnected.hasNext()) {
-				for (SimpleNode additional : g.bootstrap(disconnected.next(), rand)) {
-					disconnected.add(additional);
+			Queue<SimpleNode> disconnected = new LinkedList<SimpleNode>(result.disconnected);
+			disconnectedFolding += result.disconnected.size();
+			while (!disconnected.isEmpty()) {
+				for (SimpleNode additional : g.bootstrap(disconnected.remove(), rand)) {
+					disconnected.offer(additional);
+					disconnectedBootstrap++;
 				}
 			}
 		}
+		System.out.println(disconnectedFolding + " nodes became disconnected due to folding.");
+		System.out.println(disconnectedBootstrap + " nodes became disconnected due to bootstrapping.");
 		System.out.println("Routing success rate: " + (double)successes / nRequests * 100);
 	}
 
