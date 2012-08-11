@@ -36,6 +36,15 @@ public class SimpleNode {
 		out.writeInt(desiredDegree);
 	}
 
+	/**
+	 * The last request ID to be routed by this node.
+	 */
+	private long lastRouted = -1;
+	/**
+	 * The current request ID.
+	 */
+	static long requestID = 0;
+
 	@Override
 	public boolean equals(Object o) {
 		if (!(o instanceof SimpleNode)) return false;
@@ -355,9 +364,16 @@ public class SimpleNode {
 	 *
 	 */
 	public RouteResult route(final SimpleNode target, final int hopsToLive, final RoutingPolicy routingPolicy, final FoldingPolicy foldingPolicy) {
+		/*
+		 * NOTE: This is static and package-local: not thread-safe! The simulator is as of this writing strictly
+		 * single-threaded. The request ID could be an argument otherwise.
+		 */
+		requestID++;
+		// TODO: Duplicate argument value determination between these methods: chain and target.
 		switch (routingPolicy) {
-			case GREEDY: return greedyRoute(target.getLocation(), hopsToLive, new greedy(), foldingPolicy, new ArrayList<SimpleNode>());
-			case LOOP_DETECTION: return greedyRoute(target.getLocation(), hopsToLive, new loopDetection(), foldingPolicy, new ArrayList<SimpleNode>());
+			case GREEDY: return greedyRoute(target.getLocation(), hopsToLive, false, new greedy(), foldingPolicy, new ArrayList<SimpleNode>());
+			case LOOP_DETECTION: return greedyRoute(target.getLocation(), hopsToLive, false, new loopDetection(), foldingPolicy, new ArrayList<SimpleNode>());
+			case BACKTRACKING: return greedyRoute(target.getLocation(), hopsToLive, true, new loopDetection(), foldingPolicy, new ArrayList<SimpleNode>());
 			default: throw new IllegalStateException("Routing for policy " + routingPolicy.name() + " not implemented.");
 		}
 	}
@@ -379,7 +395,7 @@ public class SimpleNode {
 			if (distances.size() > 0) {
 				next = distances.get(0).node;
 
-				while (chain.contains(next)) {
+				while (next.lastRouted == requestID) {
 					distances.remove(0);
 					if (distances.size() > 0) next = distances.get(0).node;
 					else {
@@ -412,7 +428,7 @@ public class SimpleNode {
 		}
 	}
 
-	private RouteResult greedyRoute(final double target, int hopsToLive, final PeerSelector peerSelector, final FoldingPolicy foldingPolicy, final ArrayList<SimpleNode> chain) {
+	private RouteResult greedyRoute(final double target, int hopsToLive, final boolean backtracking, final PeerSelector peerSelector, final FoldingPolicy foldingPolicy, final ArrayList<SimpleNode> chain) {
 		if (hopsToLive <= 0) throw new IllegalStateException("hopsToLive must be positive. It is " + hopsToLive);
 
 		/*
@@ -428,16 +444,25 @@ public class SimpleNode {
 		final SimpleNode next = peerSelector.selectPeer(target, this, chain);
 
 		// Nowhere is closer or available, and this node is not the target one.
-		if (next == this) return new RouteResult(false);
+		if (next == this) return new RouteResult(false, chain.size());
 
 		//TODO: Probabilistic decrement
 		hopsToLive--;
 
 		chain.add(this);
+		if (backtracking) lastRouted = requestID;
 		if (hopsToLive == 0) {
 			return new RouteResult(true, success(chain, foldingPolicy), chain.size());
 		} else {
-			return next.greedyRoute(target, hopsToLive, peerSelector, foldingPolicy, chain);
+			final RouteResult result = next.greedyRoute(target, hopsToLive, backtracking, peerSelector, foldingPolicy, chain);
+			// If the routing did not succeed and did not use all remaining hops, backtrack if enabled.
+			final int additionalHops = result.pathLength - chain.size();
+			if (backtracking && !result.success && additionalHops < hopsToLive) {
+				System.out.println("BACKTRACKING");
+				return this.greedyRoute(target, hopsToLive - additionalHops, backtracking, peerSelector, foldingPolicy, chain);
+			} else {
+				return result;
+			}
 		}
 	}
 

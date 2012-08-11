@@ -22,8 +22,8 @@ public class RouteResult {
 	 */
 	public final int pathLength;
 
-	public RouteResult(boolean success) {
-		this(success, new ArrayList<SimpleNode>(), 0);
+	public RouteResult(boolean success, int pathLength) {
+		this(success, new ArrayList<SimpleNode>(), pathLength);
 	}
 
 	public RouteResult(boolean success, ArrayList<SimpleNode> disconnected, int pathLength) {

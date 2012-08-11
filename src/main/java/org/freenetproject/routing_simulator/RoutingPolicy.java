@@ -12,5 +12,10 @@ public enum RoutingPolicy {
 	 * node will route to the next-best. The routing ends when the hopsToLive value hits zero, or the local node
 	 * has no peers left to route to.
 	 */
-	LOOP_DETECTION
+	LOOP_DETECTION,
+	/**
+	 * Loop detection with backtracking: when there are no non-loop nodes remaining the request is passed up the
+	 * chain for another routing attempt.
+	 */
+	BACKTRACKING
 }
