@@ -280,7 +280,7 @@ public class RoutingSim {
 			 */
 			Queue<SimpleNode> disconnected = new LinkedList<SimpleNode>(result.disconnected);
 			disconnectedFolding += result.disconnected.size();
-			while (!disconnected.isEmpty()) {
+			while (bootstrap && !disconnected.isEmpty()) {
 				for (SimpleNode additional : g.bootstrap(disconnected.remove(), rand)) {
 					disconnected.offer(additional);
 					disconnectedBootstrap++;
