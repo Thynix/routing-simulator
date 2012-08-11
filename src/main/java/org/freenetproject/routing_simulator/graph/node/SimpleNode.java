@@ -243,26 +243,32 @@ public class SimpleNode {
 		assert endpoint.degree() >= latticeLinks;
 
 		// No shortcuts remain - cannot add this fold because there is no connection to drop.
-		if (degree() == latticeLinks) {
+		if (endpoint.degree() == latticeLinks) {
 			return null;
 		}
 
-		int disconnectedShortcut = rand.nextInt(degree() - latticeLinks) + latticeLinks;
-		final SimpleNode disconnected = connections.get(disconnectedShortcut);
+		final SimpleNode disconnected;
 
-		// Can't leave node that's being disconnected without its lattice links, if any.
-		assert disconnected.degree() > latticeLinks;
-
-		final int initialDegree = degree() + disconnected.degree() + endpoint.degree();
+		final int initialDegree;
 
 		if (foldingPolicy == FoldingPolicy.SANDBERG || foldingPolicy == FoldingPolicy.SANDBERG_NO_LATTICE) {
-			assert !this.isConnected(endpoint) && !endpoint.isConnected(this);
-			assert this.isConnected(disconnected) && disconnected.isConnected(this);
-			disconnect(disconnected);
-			assert !this.isConnected(disconnected) && !disconnected.isConnected(this);
-			connect(endpoint);
-			assert this.isConnected(endpoint) && endpoint.isConnected(this);
+			// Endpoint drops connection.
+			int disconnectedShortcut = rand.nextInt(endpoint.degree() - latticeLinks) + latticeLinks;
+			disconnected = endpoint.connections.get(disconnectedShortcut);
+
+			// Can't leave node that's being disconnected without its lattice links, if any.
+			assert disconnected.degree() > latticeLinks;
+
+			initialDegree = degree() + disconnected.degree() + endpoint.degree();
+
+			endpoint.disconnect(disconnected);
+			endpoint.connect(this);
 		} else /*if (foldingPolicy == FoldingPolicy.SANDBERG_DIRECTED)*/ {
+			int disconnectedShortcut = rand.nextInt(degree() - latticeLinks) + latticeLinks;
+			disconnected = connections.get(disconnectedShortcut);
+
+			initialDegree = degree() + disconnected.degree() + endpoint.degree();
+
 			disconnectOutgoing(disconnected);
 			connectOutgoing(endpoint);
 		}
