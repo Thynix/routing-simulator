@@ -292,7 +292,7 @@ public class RoutingSim {
 		System.out.println(disconnectedFolding + " nodes became disconnected due to folding.");
 		System.out.println(disconnectedBootstrap + " nodes became disconnected due to bootstrapping.");
 		System.out.println("Routing success rate: " + (double)successes / nRequests * 100);
-		System.out.println("Mean path length " + totalPathLength / nRequests);
+		System.out.println("Mean path length " + (double)totalPathLength / nRequests);
 	}
 
 	/**
