@@ -203,9 +203,9 @@ public class SimpleNode {
 			final SimpleNode candidate = foldingTo.disconnectCandidate();
 			if (foldingTo.offerPathFold(foldingFrom, 0.07)) {
 				if (candidate != null && candidate.degree() == 0) disconnected.add(candidate);
-			if (iterator.hasPrevious()) {
-				foldingFrom = iterator.previous();
-			}
+				if (iterator.hasPrevious()) {
+					foldingFrom = iterator.previous();
+				}
 			}
 		}
 		return disconnected;
