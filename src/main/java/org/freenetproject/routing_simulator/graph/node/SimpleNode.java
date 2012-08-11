@@ -29,7 +29,7 @@ public class SimpleNode {
 	/**Index of this node in the graph; purely for convenience, not used in any decision making.*/
 	public final int index;
 
-	private final LRUQueue<SimpleNode> lruQueue;
+	final LRUQueue<SimpleNode> lruQueue;
 
 	public void write(DataOutputStream out) throws IOException {
 		out.writeDouble(location);
@@ -126,9 +126,9 @@ public class SimpleNode {
 	/**
 	 * @return a peer which can be disconnected when path folding.
 	 */
-	private SimpleNode disconnectCandidate() {
+	SimpleNode disconnectCandidate() {
 		final SimpleNode least = lruQueue.pop();
-		lruQueue.push(least);
+		lruQueue.pushLeast(least);
 		return least;
 	}
 
