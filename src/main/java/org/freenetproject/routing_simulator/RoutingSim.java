@@ -258,7 +258,7 @@ public class RoutingSim {
 
 	private static void simulate(Graph g, RandomGenerator rand, int nRequests, final FoldingPolicy foldingPolicy, final RoutingPolicy routingPolicy, final boolean bootstrap) {
 
-		int successes = 0, disconnectedFolding = 0, disconnectedBootstrap = 0;
+		int successes = 0, disconnectedFolding = 0, disconnectedBootstrap = 0, totalPathLength = 0;
 		for (int i = 0; i < nRequests; i++) {
 			final SimpleNode origin = g.getNode(rand.nextInt(g.size()));
 			/*
@@ -286,10 +286,13 @@ public class RoutingSim {
 					disconnectedBootstrap++;
 				}
 			}
+
+			totalPathLength += result.pathLength;
 		}
 		System.out.println(disconnectedFolding + " nodes became disconnected due to folding.");
 		System.out.println(disconnectedBootstrap + " nodes became disconnected due to bootstrapping.");
 		System.out.println("Routing success rate: " + (double)successes / nRequests * 100);
+		System.out.println("Mean path length " + totalPathLength / nRequests);
 	}
 
 	/**

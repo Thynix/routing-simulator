@@ -17,14 +17,18 @@ public class RouteResult {
 	 * True if and only if the routing arrived at its exact target.
 	 */
 	public final boolean success;
+	/**
+	 * The length of the path taken, valid if and only if routing was successful.
+	 */
+	public final int pathLength;
 
 	public RouteResult(boolean success) {
-		this.success = success;
-		this.disconnected = new ArrayList<SimpleNode>();
+		this(success, new ArrayList<SimpleNode>(), 0);
 	}
 
-	public RouteResult(boolean success, ArrayList<SimpleNode> disconnected) {
+	public RouteResult(boolean success, ArrayList<SimpleNode> disconnected, int pathLength) {
 		this.success = success;
 		this.disconnected = disconnected;
+		this.pathLength = pathLength;
 	}
 }

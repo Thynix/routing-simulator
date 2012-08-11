@@ -365,7 +365,7 @@ public class SimpleNode {
 		 */
 		if (this.getLocation() == target) {
 			chain.add(this);
-			return new RouteResult(true, success(chain, foldingPolicy));
+			return new RouteResult(true, success(chain, foldingPolicy), chain.size());
 		}
 
 		// Find node closest to target. Start out assuming this node is the closest.
@@ -411,7 +411,7 @@ public class SimpleNode {
 
 		if (hopsToLive == 0) {
 			chain.add(this);
-			return new RouteResult(true, success(chain, foldingPolicy));
+			return new RouteResult(true, success(chain, foldingPolicy), chain.size());
 		} else {
 			chain.add(this);
 			return next.greedyRoute(target, hopsToLive, loopDetection, foldingPolicy, chain);
