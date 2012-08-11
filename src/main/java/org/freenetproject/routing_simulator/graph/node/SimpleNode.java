@@ -356,30 +356,22 @@ public class SimpleNode {
 	 */
 	public RouteResult route(final SimpleNode target, final int hopsToLive, final RoutingPolicy routingPolicy, final FoldingPolicy foldingPolicy) {
 		switch (routingPolicy) {
-			case GREEDY: return greedyRoute(target.getLocation(), hopsToLive, false, foldingPolicy, new ArrayList<SimpleNode>());
-			//TODO: might be cleaner to use different routing method internally? Some degree of duplication but might read more nicely.
-			case LOOP_DETECTION: return greedyRoute(target.getLocation(), hopsToLive, true, foldingPolicy, new ArrayList<SimpleNode>());
+			case GREEDY: return greedyRoute(target.getLocation(), hopsToLive, new greedy(), foldingPolicy, new ArrayList<SimpleNode>());
+			case LOOP_DETECTION: return greedyRoute(target.getLocation(), hopsToLive, new loopDetection(), foldingPolicy, new ArrayList<SimpleNode>());
 			default: throw new IllegalStateException("Routing for policy " + routingPolicy.name() + " not implemented.");
 		}
 	}
 
-	private RouteResult greedyRoute(final double target, int hopsToLive, final boolean loopDetection, final FoldingPolicy foldingPolicy, final ArrayList<SimpleNode> chain) {
-		if (hopsToLive <= 0) throw new IllegalStateException("hopsToLive must be positive. It is " + hopsToLive);
+	private interface PeerSelector {
+		public SimpleNode selectPeer(final double target, final SimpleNode from, final ArrayList<SimpleNode> chain);
+	}
 
-		/*
-		 * Check whether the request reached its destination, which was selected from among node
-		 * locations.
-		 */
-		if (this.getLocation() == target) {
-			chain.add(this);
-			return new RouteResult(true, success(chain, foldingPolicy), chain.size());
-		}
-
-		// Find node closest to target. Start out assuming this node is the closest.
-		SimpleNode next = this;
-		if (loopDetection) {
-			ArrayList<DistanceEntry> distances = new ArrayList<DistanceEntry>(this.degree());
-			for (SimpleNode peer : this.getConnections()) {
+	private static class loopDetection implements PeerSelector {
+		@Override
+		public SimpleNode selectPeer(final double target, final SimpleNode from, final ArrayList<SimpleNode> chain) {
+			SimpleNode next = from;
+			ArrayList<DistanceEntry> distances = new ArrayList<DistanceEntry>(from.degree());
+			for (SimpleNode peer : from.getConnections()) {
 				distances.add(new DistanceEntry(peer.distanceToLoc(target), peer));
 			}
 			Collections.sort(distances);
@@ -392,23 +384,48 @@ public class SimpleNode {
 					if (distances.size() > 0) next = distances.get(0).node;
 					else {
 						// No peers remaining that would not result in a loop.
-						next = this;
 						break;
 					}
 				}
 			}
-		} else {
-			double closest = distanceToLoc(target);
+
+			return next;
+		}
+	}
+
+	private static class greedy implements PeerSelector {
+		@Override
+		public SimpleNode selectPeer(double target, SimpleNode from, ArrayList<SimpleNode> chain) {
+			SimpleNode next = from;
+			double closest = from.distanceToLoc(target);
 
 			// Check peer distances.
-			for (SimpleNode peer : connections) {
+			for (SimpleNode peer : from.getConnections()) {
 				double distance = peer.distanceToLoc(target);
 				if (distance < closest) {
 					next = peer;
 					closest = distance;
 				}
 			}
+
+			return next;
 		}
+	}
+
+	private RouteResult greedyRoute(final double target, int hopsToLive, final PeerSelector peerSelector, final FoldingPolicy foldingPolicy, final ArrayList<SimpleNode> chain) {
+		if (hopsToLive <= 0) throw new IllegalStateException("hopsToLive must be positive. It is " + hopsToLive);
+
+		/*
+		 * Check whether the request reached its destination, which was selected from among node
+		 * locations.
+		 */
+		if (this.getLocation() == target) {
+			chain.add(this);
+			return new RouteResult(true, success(chain, foldingPolicy), chain.size());
+		}
+
+		// Find node next node to route to.
+		final SimpleNode next = peerSelector.selectPeer(target, this, chain);
 
 		// Nowhere is closer or available, and this node is not the target one.
 		if (next == this) return new RouteResult(false);
@@ -421,7 +438,7 @@ public class SimpleNode {
 			return new RouteResult(true, success(chain, foldingPolicy), chain.size());
 		} else {
 			chain.add(this);
-			return next.greedyRoute(target, hopsToLive, loopDetection, foldingPolicy, chain);
+			return next.greedyRoute(target, hopsToLive, peerSelector, foldingPolicy, chain);
 		}
 	}
 
