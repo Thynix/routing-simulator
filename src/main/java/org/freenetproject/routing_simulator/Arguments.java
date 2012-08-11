@@ -34,7 +34,7 @@ import static org.freenetproject.routing_simulator.util.File.writableFile;
  */
 public class Arguments {
 
-	public final boolean quiet, verbose, lattice, fastGeneration, runProbe, metropolisHastings, runRoute, includeLattice;
+	public final boolean quiet, verbose, lattice, fastGeneration, runProbe, metropolisHastings, runRoute, includeLattice, bootstrap;
 	public final int seed, networkSize, shortcuts, maxHops, nRequests;
 	public final GraphGenerator graphGenerator;
 	public final DataInputStream degreeInput, linkInput, graphInput;
@@ -47,7 +47,7 @@ public class Arguments {
 
 	private static final RoutingPolicy ROUTING_DEFAULT = RoutingPolicy.GREEDY;
 
-	private Arguments(boolean quiet, boolean verbose, boolean lattice, boolean fastGeneration, boolean runProbe, boolean metropolisHastings, boolean runRoute, boolean includeLattice,
+	private Arguments(boolean quiet, boolean verbose, boolean lattice, boolean fastGeneration, boolean runProbe, boolean metropolisHastings, boolean runRoute, boolean includeLattice, boolean bootstrap,
 	                  int seed, int networkSize, int shortcuts, int maxHops, int nRequests,
 	                  GraphGenerator graphGenerator,
 	                  DataInputStream degreeInput, DataInputStream linkInput, DataInputStream graphInput,
@@ -64,6 +64,7 @@ public class Arguments {
 		this.runProbe = runProbe;
 		this.metropolisHastings = metropolisHastings;
 		this.runRoute = runRoute;
+		this.bootstrap = bootstrap;
 		this.seed = seed;
 		this.networkSize = networkSize;
 		this.shortcuts = shortcuts;
@@ -152,6 +153,7 @@ public class Arguments {
 		options.addOption("r", "route-policy", true, description.toString());
 
 		options.addOption("H", "output-hops", true, "Base filename to output hop histograms for each sink policy. Appended with -<policy-num> for each.");
+		options.addOption("b", "bootstrap", false, "If specified, nodes which lose all their connections due to path folding will be connected to random nodes.");
 
 		//Simulations: Probe distribution
 		options.addOption("p", "probe", true, "Simulate running probes from random locations for the specified number of maximum hops. Requires that --output-probe be specified.");
@@ -336,7 +338,7 @@ public class Arguments {
 		final int maxHops = cmd.hasOption("probe") ? Integer.valueOf(cmd.getOptionValue("probe")) : 0;
 		final int shortcuts = cmd.hasOption("sandberg-graph") ? Integer.valueOf(cmd.getOptionValue("sandberg-graph")) : 0;
 
-		return new Arguments(quiet, verbose, lattice, fastGeneration, cmd.hasOption("probe"), cmd.hasOption("metropolis-hastings"), cmd.hasOption("route"), cmd.hasOption("include-lattice"),
+		return new Arguments(quiet, verbose, lattice, fastGeneration, cmd.hasOption("probe"), cmd.hasOption("metropolis-hastings"), cmd.hasOption("route"), cmd.hasOption("include-lattice"), cmd.hasOption("bootstrap"),
 		                     seed, networkSize, shortcuts, maxHops, nRequests,
 		                     graphGenerator,
 		                     degreeInput, linkInput, graphInput,

@@ -16,6 +16,8 @@ import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
+import java.util.ListIterator;
 
 /**
  * Class to perform routing simulations on Graphs.
@@ -100,7 +102,7 @@ public class RoutingSim {
 
 		if (arguments.runRoute) {
 			rand = new MersenneTwister(arguments.seed);
-			simulate(g, rand, arguments.nRequests, arguments.foldingPolicy, arguments.routingPolicy);
+			simulate(g, rand, arguments.nRequests, arguments.foldingPolicy, arguments.routingPolicy, arguments.bootstrap);
 		}
 
 		if (arguments.degreeOutput != null) {
@@ -252,7 +254,7 @@ public class RoutingSim {
 		}
 	}
 
-	private static void simulate(Graph g, RandomGenerator rand, int nRequests, final FoldingPolicy foldingPolicy, final RoutingPolicy routingPolicy) {
+	private static void simulate(Graph g, RandomGenerator rand, int nRequests, final FoldingPolicy foldingPolicy, final RoutingPolicy routingPolicy, final boolean bootstrap) {
 
 		int successes = 0;
 		for (int i = 0; i < nRequests; i++) {
@@ -263,7 +265,23 @@ public class RoutingSim {
 			 * whether the target location is equal.
 			 */
 			final SimpleNode destination = g.getNode(rand.nextInt(g.size()));
-			if (origin.route(destination, 50, routingPolicy, foldingPolicy)) successes++;
+			final RouteResult result = origin.route(destination, 50, routingPolicy, foldingPolicy);
+
+			// Count successes.
+			if (result.success) successes++;
+
+			/*
+			 * Bootstrap all nodes which became disconnected during path folding.
+			 * Bootstrapping will not connect to disconnected nodes.
+			 * Bootstrapping will drop connections when making new ones so that the total connection count
+			 * remains the same; additional nodes may become disconnected in the process.
+			 */
+			ListIterator<SimpleNode> disconnected = result.disconnected.listIterator();
+			while (disconnected.hasNext()) {
+				for (SimpleNode additional : g.bootstrap(disconnected.next(), rand)) {
+					disconnected.add(additional);
+				}
+			}
 		}
 		System.out.println("Routing success rate: " + (double)successes / nRequests * 100);
 	}

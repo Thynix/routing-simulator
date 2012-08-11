@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 
 /**
  * Class to represent and generate graphs of small world networks.
@@ -116,6 +117,42 @@ public class Graph {
 
 		// There is an edge between every node in a circle.
 		assert nEdges() == size();
+	}
+
+	/**
+	 * Gives the node in question random connections until it meets its desired degree. Does not add disconnected
+	 * peers.
+	 *
+	 * @param node node to add connections to.
+	 * @param random source of entropy for selecting which nodes to connect to.
+	 */
+	public List<SimpleNode> bootstrap(final SimpleNode node, final RandomGenerator random) {
+		List<SimpleNode> disconnectedNodes = new ArrayList<SimpleNode>();
+		SimpleNode peer;
+		do {
+			peer = getNode(random.nextInt(size()));
+
+			/*
+			 * Do not connect to self - reference comparison should be sufficient, or make a duplicate
+			 * connection. Avoid connecting to disconnected nodes lest it fragment the network.
+			 */
+			if (node == peer || node.isConnected(peer) || peer.degree() == 0) continue;
+
+			// Reference comparison should be sufficient.
+			assert !node.equals(peer);
+
+			/*
+			 * If the peer is already at its degree, connect only if not rejected.
+			 * Drop a random connection to keep the connection count invariant.
+			 */
+			if (!peer.atDegree() || peer.atDegree() && random.nextDouble() > rejectProbability) {
+				SimpleNode disconnected = peer.randomDisconnect();
+				node.connect(peer);
+				if (disconnected.degree() == 0) disconnectedNodes.add(disconnected);
+			}
+		} while (!node.atDegree());
+
+		return disconnectedNodes;
 	}
 
 	/**
