@@ -433,11 +433,10 @@ public class SimpleNode {
 		//TODO: Probabilistic decrement
 		hopsToLive--;
 
+		chain.add(this);
 		if (hopsToLive == 0) {
-			chain.add(this);
 			return new RouteResult(true, success(chain, foldingPolicy), chain.size());
 		} else {
-			chain.add(this);
 			return next.greedyRoute(target, hopsToLive, peerSelector, foldingPolicy, chain);
 		}
 	}
