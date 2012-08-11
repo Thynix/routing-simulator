@@ -124,10 +124,9 @@ public class SimpleNode {
 	}
 
 	/**
-	 * @return a peer if one should be disconnected; null otherwise.
+	 * @return a peer which can be disconnected when path folding.
 	 */
 	private SimpleNode disconnectCandidate() {
-		if (!atDegree()) return null;
 		final SimpleNode least = lruQueue.pop();
 		lruQueue.push(least);
 		return least;
@@ -146,7 +145,11 @@ public class SimpleNode {
 		if (atDegree() && rand.nextDouble() > acceptanceRate) return false;
 
 		final SimpleNode least = disconnectCandidate();
-		if (least != null) disconnect(least);
+
+		// Initial degree sum over all nodes involved. This should remain invariant.
+		final int initialDegree = degree() + least.degree() + peer.degree();
+
+		disconnect(least);
 
 		// Peers added via path folding are added to the end.
 		connect(peer);
@@ -154,6 +157,9 @@ public class SimpleNode {
 		lruQueue.pushLeast(peer);
 		peer.lruQueue.remove(this);
 		peer.lruQueue.pushLeast(this);
+
+		// Path folding should not change the total connection count.
+		assert initialDegree == degree() + least.degree() + peer.degree();
 
 		return true;
 	}
@@ -236,11 +242,8 @@ public class SimpleNode {
 		assert degree() >= latticeLinks;
 		assert endpoint.degree() >= latticeLinks;
 
-		// No shortcuts remain - accept the incoming.
+		// No shortcuts remain - cannot add this fold because there is no connection to drop.
 		if (degree() == latticeLinks) {
-			// A node should not be able to lose its shortcut link if it is just moving it.
-			assert foldingPolicy != FoldingPolicy.SANDBERG_DIRECTED;
-			connect(endpoint);
 			return null;
 		}
 
@@ -249,6 +252,8 @@ public class SimpleNode {
 
 		// Can't leave node that's being disconnected without its lattice links, if any.
 		assert disconnected.degree() > latticeLinks;
+
+		final int initialDegree = degree() + disconnected.degree() + endpoint.degree();
 
 		if (foldingPolicy == FoldingPolicy.SANDBERG || foldingPolicy == FoldingPolicy.SANDBERG_NO_LATTICE) {
 			assert !this.isConnected(endpoint) && !endpoint.isConnected(this);
@@ -261,6 +266,9 @@ public class SimpleNode {
 			disconnectOutgoing(disconnected);
 			connectOutgoing(endpoint);
 		}
+
+		// Total connection count should remain invariant.
+		assert initialDegree == degree() + disconnected.degree() + endpoint.degree();
 
 		return disconnected;
 	}
@@ -411,13 +419,23 @@ public class SimpleNode {
 	}
 
 	/**
-	 * Disconnect from a random peer.
+	 * Disconnect from a random peer, and connect to the given one.
+	 *
+	 * @param peer node to connect to.
 	 *
 	 * @return Peer disconnected from.
 	 */
-	public SimpleNode randomDisconnect() {
+	public SimpleNode swapConnections(SimpleNode peer) {
 		final SimpleNode disconnected = connections.get(rand.nextInt(connections.size()));
+
+		final int initalDegree = degree() + disconnected.degree() + peer.degree();
+
 		disconnect(disconnected);
+		connect(peer);
+
+		// Connection count should remain invariant.
+		assert initalDegree == degree() + disconnected.degree() + peer.degree();
+
 		return disconnected;
 	}
 

@@ -146,8 +146,7 @@ public class Graph {
 			 * Drop a random connection to keep the connection count invariant.
 			 */
 			if (!peer.atDegree() || peer.atDegree() && random.nextDouble() > rejectProbability) {
-				SimpleNode disconnected = peer.randomDisconnect();
-				node.connect(peer);
+				SimpleNode disconnected = peer.swapConnections(node);
 				if (disconnected.degree() == 0) disconnectedNodes.add(disconnected);
 			}
 		} while (!node.atDegree());
