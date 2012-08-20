@@ -227,7 +227,7 @@ public class Arguments {
 			graphGenerator = GraphGenerator.SUPER_NODE;
 		}
 
-		if (degreeOptions == 1 && linkOptions == 0 && !cmd.hasOption("sandberg-graph")) {
+		if (degreeOptions == 0 && linkOptions == 1 && cmd.hasOption("sandberg-graph")) {
 			validGeneration++;
 			graphGenerator = GraphGenerator.SANDBERG;
 		}
