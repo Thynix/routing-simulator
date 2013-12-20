@@ -624,7 +624,10 @@ public class SimpleNode {
 				if (rand.nextDouble() > beta) {
 					//not accepted; decrement hops and try again
 					next = this;
-					hops--;
+					// Probabilistic decrement at HTL = 1.
+					if (hops != 1 || rand.nextDouble() < 0.2f) {
+						hops--;
+					}
 					/* Walk stayed on this node; had it ended here it would be the endpoint.
 					 * Don't add extra if this is the last in the chain case though; will be added
 					 * in the call for zero hops.
