@@ -165,13 +165,13 @@ public class RoutingSim {
 	 * @param array to convert
 	 * @return string in which "[index] [value]" pairs are newline-delimited.
 	 */
-	private static String stringArray(int[] array) {
+	private static String stringArray(double[] array) {
 		String s = "";
 		for (int i = 0; i < array.length; i++) s += i + " " + array[i] + "\n";
 		return s;
 	}
 
-	private static void writeArray(int[] array, File target) {
+	private static void writeArray(double[] array, File target) {
 		try {
 			FileOutputStream outputStream = new FileOutputStream(target);
 			outputStream.write(stringArray(array).getBytes());
@@ -204,6 +204,7 @@ public class RoutingSim {
 		 * Find baseline for visibility by selecting the same number of nodes from the entire network at random
 		 * as endpoints at each HTL. Sort occurrences each run, then add to final result array to represent
 		 * actual spread from each run and avoid node index influence.
+		 * TODO: There seems to be node index influence anyway.
 		 */
 		for (int i = 0; i < nTrials; i++) {
 			int[] trialOccurrences = new int[g.size()];
@@ -217,12 +218,14 @@ public class RoutingSim {
 			}
 		}
 
-		output = new File(containingPath + "reference.dat");
-		writeArray(baselineOccurrences, output);
+		// TODO: What is this for? Maybe add a percentageArray output function?
+		/*output = new File(containingPath + "reference.dat");
+		writeArray(baselineOccurrences, output);*/
 
 		System.out.println("Simulating HTL");
 		//Find distribution of nodes reached with random walk for increasing hops from all nodes.
 		//maxHops + 1 is because the starting node is at zero hops.
+		// Number of occurrences [number of hops out][node index].
 		int[][] hopOccurrences = new int[maxHops + 1][g.size()];
 		ArrayList<SimpleNode> trace;
 		for (int nodeIndex = 0; nodeIndex < nTrials; nodeIndex++) {
@@ -252,7 +255,16 @@ public class RoutingSim {
 		System.out.println("Sorting results.");
 		for (int hops = 0; hops <= maxHops; hops++) {
 			output = new File(containingPath + "probe-" + hops + ".dat");
-			writeArray(hopOccurrences[hops], output);
+			long total = 0;
+			for (int occurrences : hopOccurrences[hops]) {
+				total += occurrences;
+			}
+			double percentages[] = new double[g.size()];
+			int i = 0;
+			for (int occurrences : hopOccurrences[hops]) {
+				percentages[i++] = occurrences/(double)total;
+			}
+			writeArray(percentages, output);
 		}
 	}
 
